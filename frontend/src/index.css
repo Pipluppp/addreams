@@ -1,12 +1,101 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
-:root {
-  font-family: "Space Grotesk", "Segoe UI", sans-serif;
-  color: #141414;
-  background: #f8f6f3;
+@theme {
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-body: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+
+  --color-canvas: #faf8f5;
+  --color-surface: #ffffff;
+  --color-surface-soft: #fff0f9;
+
+  --color-ink: #1a1a1a;
+  --color-muted: #6b6560;
+  --color-placeholder: #a39e98;
+
+  --color-accent: #ff4fc2;
+  --color-accent-hover: #e8389f;
+  --color-accent-ink: #ffffff;
+
+  --color-frame: #1a1a1a;
+  --color-border-subtle: #e5e0da;
+
+  --color-success: #2d9f6f;
+  --color-error: #d94545;
+  --color-warning: #e5a03a;
+
+  --radius-pill: 999px;
+
+  --spacing-section: 6rem;
+  --spacing-section-mobile: 4rem;
+  --spacing-flow: 1.5rem;
+
+  --animate-reveal-rise: reveal-rise 560ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
+  --animate-spin-slow: spin-slow 24s linear infinite;
+  --animate-canvas-scan: canvas-scan 2.8s cubic-bezier(0.25, 0.1, 0.25, 1) infinite;
+
+  @keyframes reveal-rise {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes canvas-scan {
+    0% {
+      transform: translateX(-60%);
+    }
+    100% {
+      transform: translateX(60%);
+    }
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
+@layer base {
+  * {
+    @apply border-border-subtle;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-canvas font-body text-ink antialiased;
+  }
+
+  img {
+    @apply block max-w-full;
+  }
+
+  ::selection {
+    @apply bg-accent text-accent-ink;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --spacing-section: var(--spacing-section-mobile);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reveal-rise,
+  .animate-spin-slow,
+  .animate-canvas-scan {
+    animation: none !important;
+  }
+
+  * {
+    scroll-behavior: auto;
+  }
 }

@@ -1,5 +1,7 @@
 # 02 - Product Shoots Plan (Text to Image)
 
+Status: Completed on 2026-02-12.
+
 ## Objective
 Deliver a full Product Shoots workflow for text-only generation, ready for Qwen-Image-Max backend integration.
 

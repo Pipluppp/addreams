@@ -1,6 +1,7 @@
 # 00 - Frontend Engineering Guardrails
 
 Last updated: 2026-02-12
+Status: Applied during implementation on 2026-02-12.
 
 ## Objective
 Define non-negotiable frontend implementation standards so the initial Addreams frontend stays clean, scalable, accessible, and fast.

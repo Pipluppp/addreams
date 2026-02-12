@@ -1,5 +1,7 @@
 # 03 - Ad Graphics Plan (Image Editing)
 
+Status: Completed on 2026-02-12.
+
 ## Objective
 Deliver image-edit workflow UI for Ad Graphics, aligned with Qwen-Image-Edit-Max input model.
 

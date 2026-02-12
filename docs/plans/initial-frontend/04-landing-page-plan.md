@@ -1,5 +1,7 @@
 # 04 - Landing Page Plan (Marketable)
 
+Status: Completed on 2026-02-12.
+
 ## Objective
 Create a marketable landing page that follows `docs/design.md` and funnels users into Product Shoots and Ad Graphics workflows.
 

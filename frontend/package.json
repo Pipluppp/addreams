@@ -18,7 +18,8 @@
     "bunshi": "^2.2.0",
     "jotai": "^2.15.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.24.0",

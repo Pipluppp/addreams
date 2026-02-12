@@ -1,5 +1,7 @@
 # 06 - Testing and Release Plan (Stub Backend)
 
+Status: Completed on 2026-02-12.
+
 ## Objective
 Ship initial frontend publicly with reliable local and deployed behavior while backend remains stubbed.
 
@@ -21,6 +23,13 @@ Ship initial frontend publicly with reliable local and deployed behavior while b
 6. Guardrails pass against `docs/plans/initial-frontend/00-engineering-guardrails.md`
 7. UI checklist pass against latest Web Interface Guidelines ruleset before production deploy
 8. Contract verification pass against `docs/plans/initial-frontend/07-hono-api-contract.md`
+
+## Execution Result
+1. `npm run lint`: passed.
+2. `npm run format:check`: passed.
+3. `npm run typecheck`: passed.
+4. `npm run build`: passed.
+5. `npm run cf:check -w frontend`: passed.
 
 ## Deployment Plan (Manual)
 1. Deploy backend stub:

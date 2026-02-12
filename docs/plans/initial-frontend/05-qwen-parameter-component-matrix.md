@@ -1,5 +1,7 @@
 # 05 - Qwen Parameter Component Matrix
 
+Status: Completed for current MVP scope on 2026-02-12.
+
 ## Objective
 Map Qwen API parameters to explicit frontend components for both workflows.
 
