@@ -21,7 +21,14 @@ export default {
       }
 
       const upstreamUrl = new URL(`${url.pathname}${url.search}`, env.API_BASE_URL);
-      const upstreamRequest = new Request(upstreamUrl, request);
+      const upstreamHeaders = new Headers(request.headers);
+      upstreamHeaders.delete("host");
+
+      const upstreamRequest = new Request(upstreamUrl.toString(), {
+        method: request.method,
+        headers: upstreamHeaders,
+        body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+      });
       return fetch(upstreamRequest);
     }
 

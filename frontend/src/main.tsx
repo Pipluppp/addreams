@@ -25,7 +25,20 @@ const queryClient = new QueryClient({
   },
 });
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "/api";
+function inferWorkersApiBaseUrl(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const { hostname, protocol } = window.location;
+  if (!hostname.startsWith("addreams-web.") || !hostname.endsWith(".workers.dev")) {
+    return null;
+  }
+
+  return `${protocol}//${hostname.replace(/^addreams-web\./, "addreams-api.")}/api`;
+}
+
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? inferWorkersApiBaseUrl() ?? "/api";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
