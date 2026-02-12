@@ -26,7 +26,6 @@ function resolveSize(values: AdGraphicsFormValues): AdGraphicsRequest["parameter
 
 export async function buildAdGraphicsPayload(
   values: AdGraphicsFormValues,
-  seed: number | undefined,
 ): Promise<AdGraphicsRequest> {
   const prompt = values.prompt.trim();
   const referenceImageUrl = await resolveReferenceImage(values);
@@ -35,7 +34,7 @@ export async function buildAdGraphicsPayload(
   return {
     prompt,
     referenceImageUrl,
-    model: "qwen-image-edit-max-latest",
+    model: "image-edit-latest",
     input: {
       messages: [
         {
@@ -52,8 +51,7 @@ export async function buildAdGraphicsPayload(
       negative_prompt: negativePrompt.length ? negativePrompt : undefined,
       size: resolveSize(values),
       prompt_extend: values.prompt_extend,
-      watermark: values.watermark,
-      seed,
+      watermark: false,
     },
   };
 }

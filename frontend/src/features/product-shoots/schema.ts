@@ -1,9 +1,4 @@
-import {
-  MAX_NEGATIVE_PROMPT_LENGTH,
-  MAX_PROMPT_LENGTH,
-  MAX_SEED_VALUE,
-  MIN_SEED_VALUE,
-} from "../parameters/constants";
+import { MAX_NEGATIVE_PROMPT_LENGTH, MAX_PROMPT_LENGTH } from "../parameters/constants";
 
 export type ProductShootsField = "prompt" | "negative_prompt" | "size" | "seed" | "output_format";
 
@@ -19,20 +14,6 @@ export type ProductShootsFormValues = {
   output_format: "png" | "jpg";
 };
 
-export function parseSeedInput(seedInput: string): number | undefined {
-  const trimmed = seedInput.trim();
-  if (trimmed.length === 0) {
-    return undefined;
-  }
-
-  const parsed = Number(trimmed);
-  if (!Number.isInteger(parsed)) {
-    return Number.NaN;
-  }
-
-  return parsed;
-}
-
 export function validateProductShootsForm(values: ProductShootsFormValues) {
   const errors: ProductShootsValidationErrors = {};
 
@@ -46,19 +27,8 @@ export function validateProductShootsForm(values: ProductShootsFormValues) {
     errors.negative_prompt = `Negative prompt must be ${MAX_NEGATIVE_PROMPT_LENGTH} characters or less.`;
   }
 
-  const parsedSeed = parseSeedInput(values.seed);
-  if (Number.isNaN(parsedSeed)) {
-    errors.seed = "Seed must be an integer.";
-  } else if (
-    typeof parsedSeed === "number" &&
-    (parsedSeed < MIN_SEED_VALUE || parsedSeed > MAX_SEED_VALUE)
-  ) {
-    errors.seed = `Seed must be between ${MIN_SEED_VALUE} and ${MAX_SEED_VALUE}.`;
-  }
-
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
-    seed: Number.isNaN(parsedSeed) ? undefined : parsedSeed,
   };
 }

@@ -1,21 +1,35 @@
+import { Slot } from "@radix-ui/react-slot";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "../../lib/cn";
+import { SquircleSurface } from "./SquircleSurface";
 
 type PillButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  tone?: "accent" | "neutral";
+  tone?: "primary" | "secondary" | "neutral";
+  asChild?: boolean;
 };
 
-export function PillButton({ className, tone = "accent", ...props }: PillButtonProps) {
+export function PillButton({
+  className,
+  tone = "primary",
+  asChild = false,
+  ...props
+}: PillButtonProps) {
+  const Component = asChild ? Slot : "button";
+
   return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center rounded-pill px-5 py-2 text-sm font-semibold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas disabled:cursor-not-allowed disabled:opacity-50",
-        tone === "accent"
-          ? "bg-accent text-accent-ink hover:bg-accent-hover"
-          : "border border-frame bg-surface text-ink hover:bg-surface-soft",
-        className,
-      )}
-      {...props}
-    />
+    <SquircleSurface asChild radius="xxl" smooth="xl">
+      <Component
+        className={cn(
+          "inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold text-ink transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50",
+          tone === "primary" && "bg-accent-primary text-on-primary hover:bg-accent-primary-hover",
+          tone === "secondary" &&
+            "bg-accent-secondary text-on-secondary hover:bg-accent-secondary-hover",
+          tone === "neutral" &&
+            "bg-surface text-ink hover:bg-surface-alt hover:text-accent-primary",
+          className,
+        )}
+        {...props}
+      />
+    </SquircleSurface>
   );
 }

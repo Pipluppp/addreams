@@ -3,7 +3,7 @@ import { useMolecule } from "bunshi/react";
 import { ApiClientMolecule } from "../../lib/dependencies";
 import { buildProductShootsPayload } from "./payload";
 import type { ProductShootsFormValues } from "./schema";
-import { parseSeedInput, validateProductShootsForm } from "./schema";
+import { validateProductShootsForm } from "./schema";
 
 export function useProductShootsMutation() {
   const api = useMolecule(ApiClientMolecule);
@@ -15,8 +15,7 @@ export function useProductShootsMutation() {
         throw new Error("Please resolve validation errors before submitting.");
       }
 
-      const seed = parseSeedInput(values.seed);
-      const payload = buildProductShootsPayload(values, seed);
+      const payload = buildProductShootsPayload(values);
       const response = await api.submitProductShoots(payload);
       return { payload, response };
     },

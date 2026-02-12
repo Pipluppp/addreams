@@ -23,7 +23,7 @@ export function GenerationResultFrame({
 
   if (submitError) {
     return (
-      <div className="border border-error bg-surface p-4">
+      <div className="bg-surface p-4">
         <p className="text-sm font-medium text-error" role="alert">
           {submitError}
         </p>
@@ -40,10 +40,10 @@ export function GenerationResultFrame({
   }
 
   return (
-    <div className="space-y-4 border border-frame bg-surface p-4">
-      <FrameCanvas label="Stub backend accepted request. Image preview will appear after Qwen integration." />
+    <div className="space-y-4 bg-surface p-4">
+      <FrameCanvas label="Stub backend accepted request. Image preview will appear after backend integration." />
       <ResultMetadataChips response={successRecord.response} />
-      <pre className="overflow-auto border border-border-subtle bg-canvas p-3 text-xs text-muted">
+      <pre className="overflow-auto bg-canvas p-3 text-xs text-muted">
         {JSON.stringify(successRecord.payload.parameters, null, 2)}
       </pre>
     </div>

@@ -127,7 +127,7 @@ export function AdGraphicsPanel({
         Tip: call out exact zones like \"replace the top-left logo with matte silver text.\"
       </p>
 
-      <div className="grid gap-4 border border-border-subtle bg-canvas p-4 md:grid-cols-2">
+      <div className="grid gap-4 bg-canvas p-4 md:grid-cols-2">
         <div className="space-y-3 md:col-span-2">
           <NegativePromptTextarea
             id="ad-graphics-negative-prompt"
@@ -141,7 +141,7 @@ export function AdGraphicsPanel({
           <ToggleField
             id="custom-size-toggle"
             label="Custom size mode"
-            helperText="Enable manual width/height constraints for Qwen image edit output."
+            helperText="Enable manual width/height constraints for image edit output."
             checked={values.sizeMode === "custom"}
             onChange={(event) =>
               onChange({
@@ -214,7 +214,7 @@ export function AdGraphicsPanel({
         <button
           type="button"
           onClick={onClearForm}
-          className="border border-frame bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+          className="bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
         >
           Clear form
         </button>

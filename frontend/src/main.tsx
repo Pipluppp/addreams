@@ -7,6 +7,12 @@ import App from "./App";
 import { ApiBaseScope } from "./lib/dependencies";
 import "./index.css";
 
+if (import.meta.env.DEV) {
+  void import("react-grab").catch((error) => {
+    console.warn("React Grab failed to load in development mode.", error);
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     mutations: {

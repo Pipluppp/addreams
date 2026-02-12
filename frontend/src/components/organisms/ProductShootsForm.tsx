@@ -48,7 +48,7 @@ export function ProductShootsForm({
         error={errors.prompt}
       />
 
-      <div className="space-y-3 border border-border-subtle bg-canvas p-4">
+      <div className="space-y-3 bg-canvas p-4">
         <button
           type="button"
           className="inline-flex items-center text-sm font-semibold uppercase tracking-[0.08em] text-ink transition-colors duration-200 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
@@ -115,7 +115,7 @@ export function ProductShootsForm({
           <button
             type="button"
             onClick={onReuseSettings}
-            className="border border-frame bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+            className="bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
             Reuse settings
           </button>

@@ -1,17 +1,19 @@
 import { Outlet } from "react-router-dom";
-import { SectionShell } from "../atoms/SectionShell";
+import { Frame } from "../atoms/Frame";
 import { WorkflowTabs } from "../molecules/WorkflowTabs";
 
 export function StudioLayout() {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6 sm:py-10">
-      <SectionShell
-        eyebrow="Studio"
-        heading="Craft Product and Ad Visuals"
-        description="Tune Qwen-ready parameters, run against the stub backend, and keep request settings reusable across sessions."
-      >
+    <div className="container-shell space-y-5 py-6 sm:py-8">
+      <Frame className="space-y-3 p-5">
+        <p className="accent-type text-xs uppercase tracking-[0.18em] text-ink-muted">Studio</p>
+        <h2 className="ui-title text-ink">Step-Based Creative Workflows</h2>
+        <p className="max-w-3xl text-sm text-ink-soft">
+          Navigate each workflow with gated validation, persistent drafts, and review-first
+          generation controls.
+        </p>
         <WorkflowTabs />
-      </SectionShell>
+      </Frame>
       <Outlet />
     </div>
   );

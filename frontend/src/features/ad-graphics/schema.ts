@@ -1,9 +1,4 @@
-import {
-  MAX_NEGATIVE_PROMPT_LENGTH,
-  MAX_PROMPT_LENGTH,
-  MAX_SEED_VALUE,
-  MIN_SEED_VALUE,
-} from "../parameters/constants";
+import { MAX_NEGATIVE_PROMPT_LENGTH, MAX_PROMPT_LENGTH } from "../parameters/constants";
 import { isValidCustomSize, validateReferenceImageFile } from "../../lib/image-validation";
 
 export type ReferenceMode = "upload" | "url";
@@ -57,10 +52,6 @@ function parseInteger(input: string): number | undefined {
   return parsed;
 }
 
-export function parseSeed(seedInput: string): number | undefined {
-  return parseInteger(seedInput);
-}
-
 export function validateAdGraphicsForm(values: AdGraphicsFormValues) {
   const errors: AdGraphicsValidationErrors = {};
 
@@ -93,16 +84,6 @@ export function validateAdGraphicsForm(values: AdGraphicsFormValues) {
     errors.negative_prompt = `Negative prompt must be ${MAX_NEGATIVE_PROMPT_LENGTH} characters or less.`;
   }
 
-  const parsedSeed = parseSeed(values.seed);
-  if (Number.isNaN(parsedSeed)) {
-    errors.seed = "Seed must be an integer.";
-  } else if (
-    typeof parsedSeed === "number" &&
-    (parsedSeed < MIN_SEED_VALUE || parsedSeed > MAX_SEED_VALUE)
-  ) {
-    errors.seed = `Seed must be between ${MIN_SEED_VALUE} and ${MAX_SEED_VALUE}.`;
-  }
-
   if (values.sizeMode === "custom") {
     const width = parseInteger(values.customWidth);
     const height = parseInteger(values.customHeight);
@@ -122,6 +103,5 @@ export function validateAdGraphicsForm(values: AdGraphicsFormValues) {
   return {
     isValid: Object.keys(errors).length === 0,
     errors,
-    seed: Number.isNaN(parsedSeed) ? undefined : parsedSeed,
   };
 }

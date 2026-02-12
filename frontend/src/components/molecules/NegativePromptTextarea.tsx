@@ -25,7 +25,7 @@ export function NegativePromptTextarea({
         rows={4}
         error={error}
       />
-      <p className="text-xs text-muted">
+      <p className="text-xs text-ink-muted">
         {value.length}/{MAX_NEGATIVE_PROMPT_LENGTH}
       </p>
     </div>

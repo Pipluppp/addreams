@@ -1,5 +1,6 @@
 import { cn } from "../../lib/cn";
 import type { ReferenceMode } from "../../features/ad-graphics/schema";
+import { SquircleSurface } from "../atoms/SquircleSurface";
 
 type ReferenceImageInputTabsProps = {
   value: ReferenceMode;
@@ -15,21 +16,22 @@ export function ReferenceImageInputTabs({ value, onChange }: ReferenceImageInput
   return (
     <div className="flex w-full gap-2" role="tablist" aria-label="Reference image source">
       {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          role="tab"
-          aria-selected={value === tab.id}
-          className={cn(
-            "flex-1 border px-4 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
-            value === tab.id
-              ? "rounded-pill border-accent bg-accent text-accent-ink"
-              : "border-frame bg-surface text-ink hover:border-accent",
-          )}
-          onClick={() => onChange(tab.id)}
-        >
-          {tab.label}
-        </button>
+        <SquircleSurface key={tab.id} asChild radius="xl" smooth="lg">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={value === tab.id}
+            className={cn(
+              "flex-1 px-4 py-2 text-sm font-medium transition-colors duration-200",
+              value === tab.id
+                ? "bg-accent-primary text-on-primary"
+                : "bg-surface text-ink-soft hover:bg-surface-alt hover:text-accent-primary",
+            )}
+            onClick={() => onChange(tab.id)}
+          >
+            {tab.label}
+          </button>
+        </SquircleSurface>
       ))}
     </div>
   );

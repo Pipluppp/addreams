@@ -3,11 +3,11 @@ import { Frame } from "../atoms/Frame";
 const values = [
   {
     title: "Fewer controls, better outcomes",
-    body: "Every parameter maps to documented Qwen fields so teams iterate fast without hidden knobs.",
+    body: "Every parameter is explicit so teams iterate fast without hidden knobs.",
   },
   {
     title: "Stub-safe by design",
-    body: "Workflows run now against Hono stubs while preserving Qwen-ready payload shapes for later backend swap-in.",
+    body: "Workflows run against stable stubs while keeping request payloads clean and predictable.",
   },
   {
     title: "Craft-led visual system",

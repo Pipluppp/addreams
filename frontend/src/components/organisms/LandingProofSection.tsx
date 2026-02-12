@@ -35,7 +35,7 @@ export function LandingProofSection() {
           height={examples[0].height}
           loading="lazy"
           decoding="async"
-          className="h-full w-full border border-frame object-cover"
+          className="h-full w-full object-cover"
         />
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           {examples[0].label}
@@ -50,7 +50,7 @@ export function LandingProofSection() {
           height={examples[1].height}
           loading="lazy"
           decoding="async"
-          className="h-full w-full border border-frame object-cover"
+          className="h-full w-full object-cover"
         />
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           {examples[1].label}
@@ -65,7 +65,7 @@ export function LandingProofSection() {
           height={examples[2].height}
           loading="lazy"
           decoding="async"
-          className="h-full w-full border border-frame object-cover"
+          className="h-full w-full object-cover"
         />
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           {examples[2].label}

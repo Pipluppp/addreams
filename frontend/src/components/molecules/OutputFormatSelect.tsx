@@ -22,7 +22,7 @@ export function OutputFormatSelect({ id, value, onChange, error }: OutputFormatS
       onChange={(event) => onChange(event.target.value as "png" | "jpg")}
       options={options}
       error={error}
-      helperText="Qwen-Image-Max supports png and jpg in this phase."
+      helperText="Use png or jpg output for generation."
     />
   );
 }

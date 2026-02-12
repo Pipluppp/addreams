@@ -6,8 +6,8 @@ export function LandingHero() {
     <section className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.2fr_0.8fr]">
       <div className="space-y-4">
         <h1 className="sr-only">Generate ads that convert faster.</h1>
-        <div className="inline-flex border border-frame bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted animate-reveal-rise">
-          Creative Production Studio
+        <div className="inline-flex bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted animate-reveal-rise">
+          Creative Production
         </div>
         <div className="space-y-3">
           <Frame className="inline-block p-3 animate-reveal-rise [animation-delay:80ms]">
@@ -30,14 +30,14 @@ export function LandingHero() {
         </p>
         <div className="flex flex-wrap items-center gap-3 pt-2 animate-reveal-rise [animation-delay:360ms]">
           <Link
-            to="/studio/product-shoots"
+            to="/product-shoots"
             className="inline-flex items-center justify-center rounded-pill bg-accent px-5 py-2 text-sm font-semibold text-accent-ink transition-colors duration-200 hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
           >
-            Start in Studio
+            Start Product Shoots
           </Link>
           <Link
-            to="/studio/ad-graphics"
-            className="border border-frame bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:border-accent"
+            to="/ad-graphics"
+            className="bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-alt"
           >
             Try Ad Graphics
           </Link>
@@ -45,7 +45,7 @@ export function LandingHero() {
       </div>
 
       <div className="relative hidden min-h-72 lg:block">
-        <div className="absolute right-8 top-10 h-40 w-40 rounded-full border border-frame bg-surface p-4 text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted animate-spin-slow">
+        <div className="absolute right-8 top-10 h-40 w-40 rounded-full bg-surface p-4 text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted animate-spin-slow">
           ai powered creative ai powered creative
         </div>
         <Frame className="absolute bottom-0 left-0 max-w-xs p-4 animate-reveal-rise [animation-delay:210ms]">

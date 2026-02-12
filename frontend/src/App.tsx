@@ -2,7 +2,6 @@ import { type ReactNode, lazy, Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { RouteLoadingFrame } from "./components/molecules/RouteLoadingFrame";
 import { AppShellLayout } from "./components/layouts/AppShellLayout";
-import { StudioLayout } from "./components/layouts/StudioLayout";
 
 const HomeRoute = lazy(() => import("./routes/home"));
 const ProductShootsRoute = lazy(() => import("./routes/studio/product-shoots"));
@@ -19,17 +18,17 @@ export default function App() {
       <Routes>
         <Route element={<AppShellLayout />}>
           <Route index element={withSuspense(<HomeRoute />, "Loading homepage...")} />
-          <Route path="studio" element={<StudioLayout />}>
-            <Route index element={<Navigate to="/studio/product-shoots" replace />} />
-            <Route
-              path="product-shoots"
-              element={withSuspense(<ProductShootsRoute />, "Loading Product Shoots...")}
-            />
-            <Route
-              path="ad-graphics"
-              element={withSuspense(<AdGraphicsRoute />, "Loading Ad Graphics...")}
-            />
-          </Route>
+          <Route
+            path="product-shoots"
+            element={withSuspense(<AdGraphicsRoute />, "Loading Product Shoots...")}
+          />
+          <Route
+            path="ad-graphics"
+            element={withSuspense(<ProductShootsRoute />, "Loading Ad Graphics...")}
+          />
+          <Route path="studio" element={<Navigate to="/product-shoots" replace />} />
+          <Route path="studio/product-shoots" element={<Navigate to="/product-shoots" replace />} />
+          <Route path="studio/ad-graphics" element={<Navigate to="/ad-graphics" replace />} />
           <Route path="*" element={withSuspense(<NotFoundRoute />, "Loading page...")} />
         </Route>
       </Routes>

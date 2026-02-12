@@ -32,7 +32,7 @@ export function PromptTextarea({
         rows={5}
         error={error}
       />
-      <p className={warning ? "text-xs text-warning" : "text-xs text-muted"}>
+      <p className={warning ? "text-xs text-warning" : "text-xs text-ink-muted"}>
         {length}/{MAX_PROMPT_LENGTH}
       </p>
     </div>

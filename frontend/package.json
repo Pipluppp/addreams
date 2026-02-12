@@ -14,6 +14,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@squircle-js/react": "^1.3.0",
     "@tanstack/react-query": "^5.90.21",
     "bunshi": "^2.2.0",
     "jotai": "^2.15.1",
@@ -28,6 +29,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.0",
+    "react-grab": "^0.1.14",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",

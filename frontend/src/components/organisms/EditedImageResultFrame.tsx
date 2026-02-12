@@ -23,7 +23,7 @@ export function EditedImageResultFrame({
 
   if (submitError) {
     return (
-      <div className="border border-error bg-surface p-4">
+      <div className="bg-surface p-4">
         <p className="text-sm font-medium text-error" role="alert">
           {submitError}
         </p>
@@ -40,14 +40,14 @@ export function EditedImageResultFrame({
   }
 
   return (
-    <div className="space-y-4 border border-frame bg-surface p-4">
-      <FrameCanvas label="Stub backend accepted request. Edited preview will appear after Qwen hookup." />
+    <div className="space-y-4 bg-surface p-4">
+      <FrameCanvas label="Stub backend accepted request. Edited preview will appear after backend hookup." />
       <ResultMetadataChips response={successRecord.response} />
-      <div className="border border-border-subtle bg-canvas p-3 text-xs text-muted">
+      <div className="bg-canvas p-3 text-xs text-muted">
         Validation summary: reference image present, instruction prompt present, and `n` forced to
         1.
       </div>
-      <pre className="overflow-auto border border-border-subtle bg-canvas p-3 text-xs text-muted">
+      <pre className="overflow-auto bg-canvas p-3 text-xs text-muted">
         {JSON.stringify(
           {
             referenceImageSource:
