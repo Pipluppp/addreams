@@ -1,0 +1,22 @@
+{
+  "name": "backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8787",
+    "build": "wrangler deploy --dry-run",
+    "typecheck": "tsc --noEmit",
+    "cf:check": "wrangler deploy --dry-run",
+    "cf:types": "wrangler types",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.11.9"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260212.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.64.0"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "addreams",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n FRONTEND,BACKEND -c cyan,green \"npm:dev -w frontend\" \"npm:dev -w backend\"",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev:backend": "npm run dev -w backend",
+    "build": "npm run build -w frontend && npm run build -w backend",
+    "typecheck": "npm run typecheck -w frontend && npm run typecheck -w backend",
+    "lint": "oxlint .",
+    "format": "oxfmt --ignore-path .oxfmtignore --write .",
+    "format:check": "oxfmt --ignore-path .oxfmtignore --check .",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm run build",
+    "deploy:backend": "npm run deploy -w backend",
+    "deploy:frontend": "npm run deploy -w frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "oxfmt": "^0.31.0",
+    "oxlint": "^1.46.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}
