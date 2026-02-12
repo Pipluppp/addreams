@@ -24,8 +24,17 @@ export function AppShellLayout() {
       <header className="container-shell py-4">
         <Frame className="px-4 py-3 sm:px-5">
           <div className="flex items-center justify-between gap-3">
-            <NavLink to="/" className="section-title text-[1.4rem] text-ink sm:text-[1.65rem]">
-              addreams
+            <NavLink
+              to="/"
+              className="section-title inline-flex items-center gap-2 text-[1.4rem] text-ink sm:text-[1.65rem]"
+            >
+              <img
+                src="/brand/logo.svg"
+                alt=""
+                aria-hidden="true"
+                className="h-[1.08em] w-[1.08em] shrink-0"
+              />
+              <span>addreams</span>
             </NavLink>
 
             <button
