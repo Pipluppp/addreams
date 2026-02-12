@@ -52,6 +52,13 @@ Two customer profiles drive the UX:
 | Image editing | Qwen-Image-Edit-Max, Qwen-Image-Edit-Plus, Wan - Image Edit |
 | Video generation | Wan - Image to Video, Wan - Text to Video, Wan - Reference to Video |
 
+### MVP Model Fit (Image Scope)
+
+For MVP image workflows (excluding video), the core model pair is sufficient:
+
+- `Qwen-Image-Max` -> text-to-image product shoots and ad-style image generation.
+- `Qwen-Image-Edit-Max` -> reference-image editing/composition for ad graphics and reference-based product shoots.
+
 ### API References (Detailed)
 
 - [Qwen-Image-Max API Reference](../qwen-api/Qwen-Image-Max.md)
@@ -61,12 +68,17 @@ Two customer profiles drive the UX:
 
 ## API Endpoints (Stubs)
 
-Per [setup-plan.md](../setup-plan.md):
+Per [setup-plan.md](../plans/setup-plan.md):
 
 - `POST /api/workflows/image-from-text` — text-only image generation
 - `POST /api/workflows/image-from-reference` — reference image + prompt
 - `POST /api/workflows/video-from-reference` — reference image/video + prompt
 - `GET /api/health` — service health check
+
+MVP model mapping (image):
+
+- `POST /api/workflows/image-from-text` -> `Qwen-Image-Max`
+- `POST /api/workflows/image-from-reference` -> `Qwen-Image-Edit-Max`
 
 ---
 

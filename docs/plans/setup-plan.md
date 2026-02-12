@@ -25,6 +25,9 @@ This pass delivers a runnable baseline and workflow API stubs from `docs/mvp.md`
   - `{ referenceImageUrl: string, prompt: string }`
 - `POST /api/workflows/image-from-text` request:
   - `{ prompt: string }`
+- MVP model mapping (image):
+  - `POST /api/workflows/image-from-text` -> `Qwen-Image-Max`
+  - `POST /api/workflows/image-from-reference` -> `Qwen-Image-Edit-Max`
 - All workflow stub responses:
   - `202` with `{ workflow: string, status: "stub", requestId: string, receivedAt: string }`
 - Frontend env interface:
@@ -45,7 +48,7 @@ This pass delivers a runnable baseline and workflow API stubs from `docs/mvp.md`
   README.md
   docs/mvp/README.md
   docs/mvp/*.png
-  docs/setup-plan.md
+  docs/plans/setup-plan.md
   frontend/
     package.json
     index.html
