@@ -52,6 +52,9 @@ cd frontend
 npx wrangler deploy --var API_BASE_URL=https://addreams-api.<your-workers-subdomain>.workers.dev
 ```
 
+Deployment runbook:
+- `docs/deployment-quickstart.md`
+
 ## GitHub Integration (Optional)
 
 GitHub is source control by default only. Pushing commits does not deploy unless you later enable Workers Builds in Cloudflare dashboard.
