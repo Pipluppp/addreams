@@ -6,6 +6,8 @@ Workers-first monorepo for Addreams MVP.
 - `backend/`: Hono API Worker with MVP workflow stubs.
 - Deployment mode: manual via Wrangler (no auto-deploy by default).
 
+<img width="2788" height="1710" alt="image" src="https://github.com/user-attachments/assets/860c99a2-d945-4299-8ffb-d8767af60a92" />  
+
 ## Prerequisites
 
 - Node.js 20+
