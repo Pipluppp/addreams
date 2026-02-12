@@ -52,6 +52,11 @@ Two customer profiles drive the UX:
 | Image editing | Qwen-Image-Edit-Max, Qwen-Image-Edit-Plus, Wan - Image Edit |
 | Video generation | Wan - Image to Video, Wan - Text to Video, Wan - Reference to Video |
 
+### API References (Detailed)
+
+- [Qwen-Image-Max API Reference](../qwen-api/Qwen-Image-Max.md)
+- [Qwen-Image-Edit-Max API Reference](../qwen-api/Qwen-Image-Edit-Max.md)
+
 ---
 
 ## API Endpoints (Stubs)
