@@ -88,32 +88,24 @@ These were left during Phase 1 to avoid breaking old components. Now that all co
 
 ---
 
-## Step 5.5: Update barrel exports
+## Step 5.5: Remove transitional shim exports
 
-### `components/ui/` barrel files
+### `components/ui/` shim files
 
-After migration, some barrel exports may point to wrapper files that are now trivially thin. Evaluate whether to:
+After all consumers are migrated to direct imports, delete all `frontend/src/components/ui/*` shims.
 
-**Option A:** Keep wrappers (recommended for now) — maintains stable import paths, wrappers add no runtime cost.
+### Verify
 
-**Option B:** Re-export HeroUI directly:
-
-```ts
-// components/ui/TextField.ts
-export { TextField, Label, Input, Description, FieldError } from "@heroui/react";
-```
-
-This is cleaner but changes the consumer API (compound components instead of flat props). Since the atoms already wrap HeroUI components, Option A is simpler.
+- Grep for `components/ui/` imports in `frontend/src` — zero results.
+- Delete the empty `frontend/src/components/ui` directory.
 
 ### `features/parameters/components/` barrel files
 
-These re-export molecules:
+These molecule re-exports remain valid:
 ```ts
 // features/parameters/components/prompt-textarea.ts
 export { PromptTextarea } from "../../../components/molecules/PromptTextarea";
 ```
-
-No change needed — the molecule file paths haven't changed, only their internals.
 
 ---
 
@@ -193,15 +185,15 @@ Update project instructions to reflect the new component library:
 ### Files removed
 - `atoms/SquircleSurface.tsx`
 - `lib/squircle.ts`
-- `lib/focus-first-error.ts` (if React Aria handles it)
+- `atoms/Frame.tsx` (transitional wrapper)
+- `atoms/PillButton.tsx` (transitional wrapper)
+- `components/ui/*` shim re-export files (entire directory)
 
 ### Files rewritten (atoms)
-- `atoms/PillButton.tsx` — wraps HeroUI Button
 - `atoms/TextField.tsx` — wraps HeroUI TextField compound
 - `atoms/TextareaField.tsx` — wraps HeroUI TextField + TextArea
 - `atoms/SelectField.tsx` — wraps HeroUI Select compound
 - `atoms/ToggleField.tsx` — wraps HeroUI Switch
-- `atoms/Frame.tsx` — wraps HeroUI Card
 - `atoms/FrameCanvas.tsx` — wraps HeroUI Skeleton
 - `atoms/MetadataChip.tsx` — wraps HeroUI Chip
 - `atoms/SectionShell.tsx` — composes HeroUI Card
@@ -209,6 +201,7 @@ Update project instructions to reflect the new component library:
 ### Files updated (molecules)
 - All 18 molecules updated to use new atom APIs
 - Key structural changes: PromptTextarea, WorkflowTabs, ReferenceImageInputTabs, ImageDropzone
+- Transitional wrappers removed from consumers: ImagePreviewCard, ValidationSummary
 
 ### Files updated (organisms)
 - `ProductShootsForm.tsx` — Disclosure for accordion

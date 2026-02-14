@@ -1,9 +1,9 @@
 # Phase 2: Atom Migrations
 
-Replace each atom component with its HeroUI equivalent. Each atom is a self-contained PR. The barrel exports in `components/ui/` ensure consumers don't break.
+Replace each atom component with its HeroUI equivalent. Each atom is a self-contained PR.
 
 **Prerequisite:** Phase 1 complete (styles imported, tokens mapped, BEM overrides in place)
-**Strategy:** Swap one atom at a time. Update the barrel export. Run typecheck + visual verify.
+**Strategy:** Swap one atom at a time. Update direct consumers as needed. Run typecheck + visual verify.
 
 ---
 
@@ -54,7 +54,6 @@ After this step:
 1. **Rewrite** `atoms/PillButton.tsx` to wrap HeroUI `Button`
 2. **Map** `tone` prop → HeroUI `variant` (primary→primary, secondary→secondary, neutral→ghost)
 3. **Remove** `@radix-ui/react-slot` import and `asChild` pattern
-4. **Update barrel** `ui/PillButton.ts` (still re-exports from same path)
 
 ### Consumer updates needed
 

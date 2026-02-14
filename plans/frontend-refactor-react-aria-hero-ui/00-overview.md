@@ -47,7 +47,7 @@ Migrate the addreams frontend from hand-rolled custom components to **HeroUI v3*
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | Squircle approach | CSS `corner-shape: squircle` with `@supports` progressive enhancement | ~69% coverage (Chromium). Firefox/Safari fall back to standard `border-radius`. Removes entire JS dependency. |
-| Migration strategy | Incremental, atom-first | Barrel exports in `components/ui/` let us swap internals without breaking consumers |
+| Migration strategy | Incremental, atom-first | Swap internals atom-by-atom first, then migrate consumers to direct atom/molecule imports and delete transitional shims in cleanup |
 | Event naming | Prefer React Aria/HeroUI conventions | Use `onPress` for pressable components; Select uses `onChange` with `value` in HeroUI v3 docs |
 | Form validation | Adopt HeroUI's `isInvalid` + `FieldError` | Replaces manual `aria-invalid`, `aria-describedby`, `aria-live` wiring |
 | Component structure | Adopt compound component pattern | `<TextField><Label /><Input /><Description /><FieldError /></TextField>` instead of flat props |

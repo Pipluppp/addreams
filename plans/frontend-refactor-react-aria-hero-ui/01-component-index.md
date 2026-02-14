@@ -10,17 +10,16 @@ frontend/src/
 │   ├── atoms/           ← 10 base components (all migrate to HeroUI)
 │   ├── molecules/       ← 11 composite components (most become thin HeroUI wrappers)
 │   ├── organisms/       ← 12 page sections (benefit transitively, some adopt HeroUI patterns)
-│   ├── layouts/         ← 3 layout shells (minor updates)
-│   └── ui/              ← 8 barrel re-exports (update import targets post-migration)
+│   └── layouts/         ← 3 layout shells (minor updates)
 ├── features/
 │   └── parameters/
 │       ├── constants.ts         ← Shared constants (unchanged)
 │       └── components/          ← 8 barrel re-exports to molecules (update targets)
 ├── lib/
-│   ├── cn.ts                    ← className joiner (may be removed)
+│   ├── cn.ts                    ← className joiner (kept)
 │   ├── squircle.ts              ← Squircle config (removed)
 │   ├── stepper.ts               ← Step status logic (unchanged)
-│   └── focus-first-error.ts     ← Focus utility (removed — React Aria handles this)
+│   └── focus-first-error.ts     ← Focus utility (kept for step-driven route validation)
 └── index.css                    ← Theme tokens (extended with HeroUI + corner-shape)
 ```
 
@@ -97,20 +96,11 @@ frontend/src/
 
 ---
 
-## Barrel Exports (update targets after migration)
+## Barrel Exports
 
-### `components/ui/` (8 files)
+### `components/ui/`
 
-| File | Current Export | Post-Migration Export |
-|------|--------------|---------------------|
-| `ui/Frame.ts` | `atoms/Frame` | HeroUI `Card`/`Surface` wrapper |
-| `ui/PillButton.ts` | `atoms/PillButton` | HeroUI `Button` wrapper |
-| `ui/TextField.ts` | `atoms/TextField` | HeroUI `TextField` compound |
-| `ui/TextareaField.ts` | `atoms/TextareaField` | HeroUI `TextField` + `TextArea` compound |
-| `ui/SelectField.ts` | `atoms/SelectField` | HeroUI `Select` compound |
-| `ui/ToggleField.ts` | `atoms/ToggleField` | HeroUI `Switch` wrapper |
-| `ui/SectionShell.ts` | `atoms/SectionShell` | HeroUI `Card` composition |
-| `ui/WorkflowTabs.ts` | `molecules/WorkflowTabs` | HeroUI `Tabs` wrapper |
+Transitional `components/ui/*` shim re-exports were deleted during final cleanup after consumers moved to direct atom/molecule imports.
 
 ### `features/parameters/components/` (8 files)
 
