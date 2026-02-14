@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 
 const cards = [
   {
@@ -20,7 +20,7 @@ export function LandingWorkflowSplit() {
   return (
     <div className="grid gap-5 md:grid-cols-2">
       {cards.map((card, index) => (
-        <Frame
+        <Card
           key={card.title}
           className="group flex h-full flex-col justify-between p-6 transition-colors duration-200 hover:bg-surface-alt animate-reveal-rise"
           style={{ animationDelay: `${index * 90 + 80}ms` }}
@@ -35,7 +35,7 @@ export function LandingWorkflowSplit() {
           >
             Open workflow
           </Link>
-        </Frame>
+        </Card>
       ))}
     </div>
   );

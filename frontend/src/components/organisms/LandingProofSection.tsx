@@ -1,4 +1,4 @@
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 
 const examples = [
   {
@@ -27,7 +27,7 @@ const examples = [
 export function LandingProofSection() {
   return (
     <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-[1.1fr_0.9fr]">
-      <Frame className="p-4 md:row-span-2 animate-reveal-rise">
+      <Card className="p-4 md:row-span-2 animate-reveal-rise">
         <img
           src={examples[0].src}
           alt={examples[0].alt}
@@ -40,9 +40,9 @@ export function LandingProofSection() {
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           {examples[0].label}
         </p>
-      </Frame>
+      </Card>
 
-      <Frame className="p-4 animate-reveal-rise [animation-delay:80ms]">
+      <Card className="p-4 animate-reveal-rise [animation-delay:80ms]">
         <img
           src={examples[1].src}
           alt={examples[1].alt}
@@ -55,9 +55,9 @@ export function LandingProofSection() {
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           {examples[1].label}
         </p>
-      </Frame>
+      </Card>
 
-      <Frame className="p-4 animate-reveal-rise [animation-delay:160ms]">
+      <Card className="p-4 animate-reveal-rise [animation-delay:160ms]">
         <img
           src={examples[2].src}
           alt={examples[2].alt}
@@ -70,7 +70,7 @@ export function LandingProofSection() {
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           {examples[2].label}
         </p>
-      </Frame>
+      </Card>
     </div>
   );
 }

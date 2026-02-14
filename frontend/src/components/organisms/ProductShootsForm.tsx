@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Button, Disclosure } from "@heroui/react";
 import type {
   ProductShootsValidationErrors,
   ProductShootsFormValues,
@@ -31,8 +31,6 @@ export function ProductShootsForm({
   onChange,
   onSubmit,
 }: ProductShootsFormProps) {
-  const [advancedOpen, setAdvancedOpen] = useState(false);
-
   return (
     <form
       className="space-y-5"
@@ -49,60 +47,58 @@ export function ProductShootsForm({
       />
 
       <div className="space-y-3 bg-canvas p-4">
-        <button
-          type="button"
-          className="inline-flex items-center text-sm font-semibold uppercase tracking-[0.08em] text-ink transition-colors duration-200 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-          onClick={() => setAdvancedOpen((current) => !current)}
-          aria-expanded={advancedOpen}
-          aria-controls="product-advanced-options"
-        >
-          Advanced options {advancedOpen ? "-" : "+"}
-        </button>
-
-        {advancedOpen ? (
-          <div id="product-advanced-options" className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <NegativePromptTextarea
-                id="product-negative-prompt"
-                value={values.negative_prompt}
-                onChange={(next) => onChange({ ...values, negative_prompt: next })}
-                error={errors.negative_prompt}
+        <Disclosure>
+          <Disclosure.Heading>
+            <Disclosure.Trigger className="inline-flex items-center text-sm font-semibold uppercase tracking-[0.08em] text-ink transition-colors duration-200 hover:text-accent-primary">
+              Advanced options
+              <Disclosure.Indicator className="ml-1" />
+            </Disclosure.Trigger>
+          </Disclosure.Heading>
+          <Disclosure.Content>
+            <Disclosure.Body className="grid gap-4 pt-3 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <NegativePromptTextarea
+                  id="product-negative-prompt"
+                  value={values.negative_prompt}
+                  onChange={(next) => onChange({ ...values, negative_prompt: next })}
+                  error={errors.negative_prompt}
+                />
+              </div>
+              <SizePresetSelect
+                id="product-size"
+                value={values.size}
+                onChange={(next) =>
+                  onChange({ ...values, size: next as ProductShootsFormValues["size"] })
+                }
+                error={errors.size}
               />
-            </div>
-            <SizePresetSelect
-              id="product-size"
-              value={values.size}
-              onChange={(next) =>
-                onChange({ ...values, size: next as ProductShootsFormValues["size"] })
-              }
-              error={errors.size}
-            />
-            <OutputFormatSelect
-              id="product-output-format"
-              value={values.output_format}
-              onChange={(next) => onChange({ ...values, output_format: next })}
-              error={errors.output_format}
-            />
-            <SeedInput
-              id="product-seed"
-              value={values.seed}
-              onChange={(next) => onChange({ ...values, seed: next })}
-              error={errors.seed}
-            />
-            <div className="space-y-3">
-              <PromptExtendToggle
-                id="product-prompt-extend"
-                checked={values.prompt_extend}
-                onChange={(next) => onChange({ ...values, prompt_extend: next })}
+              <OutputFormatSelect
+                id="product-output-format"
+                value={values.output_format}
+                onChange={(next) => onChange({ ...values, output_format: next })}
+                error={errors.output_format}
               />
-              <WatermarkToggle
-                id="product-watermark"
-                checked={values.watermark}
-                onChange={(next) => onChange({ ...values, watermark: next })}
+              <SeedInput
+                id="product-seed"
+                value={values.seed}
+                onChange={(next) => onChange({ ...values, seed: next })}
+                error={errors.seed}
               />
-            </div>
-          </div>
-        ) : null}
+              <div className="space-y-3">
+                <PromptExtendToggle
+                  id="product-prompt-extend"
+                  checked={values.prompt_extend}
+                  onChange={(next) => onChange({ ...values, prompt_extend: next })}
+                />
+                <WatermarkToggle
+                  id="product-watermark"
+                  checked={values.watermark}
+                  onChange={(next) => onChange({ ...values, watermark: next })}
+                />
+              </div>
+            </Disclosure.Body>
+          </Disclosure.Content>
+        </Disclosure>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -112,13 +108,9 @@ export function ProductShootsForm({
           isPending={isPending}
         />
         {canReuseSettings ? (
-          <button
-            type="button"
-            onClick={onReuseSettings}
-            className="bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-          >
+          <Button type="button" variant="ghost" onPress={onReuseSettings}>
             Reuse settings
-          </button>
+          </Button>
         ) : null}
       </div>
     </form>

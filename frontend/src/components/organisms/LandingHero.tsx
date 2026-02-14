@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 
 export function LandingHero() {
   return (
@@ -10,16 +10,16 @@ export function LandingHero() {
           Creative Production
         </div>
         <div className="space-y-3">
-          <Frame className="inline-block p-3 animate-reveal-rise [animation-delay:80ms]">
+          <Card className="inline-block p-3 animate-reveal-rise [animation-delay:80ms]">
             <p className="font-display text-5xl leading-none tracking-tight sm:text-7xl">
               Generate ads
             </p>
-          </Frame>
-          <Frame className="inline-block p-3 animate-reveal-rise [animation-delay:150ms]">
+          </Card>
+          <Card className="inline-block p-3 animate-reveal-rise [animation-delay:150ms]">
             <p className="font-display text-5xl leading-none tracking-tight sm:text-7xl">
               that convert
             </p>
-          </Frame>
+          </Card>
           <div className="inline-flex items-center rounded-pill bg-accent px-5 py-2 font-display text-4xl leading-none text-accent-ink animate-reveal-rise [animation-delay:220ms] sm:text-5xl">
             faster
           </div>
@@ -48,14 +48,14 @@ export function LandingHero() {
         <div className="absolute right-8 top-10 h-40 w-40 rounded-full bg-surface p-4 text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted animate-spin-slow">
           ai powered creative ai powered creative
         </div>
-        <Frame className="absolute bottom-0 left-0 max-w-xs p-4 animate-reveal-rise [animation-delay:210ms]">
+        <Card className="absolute bottom-0 left-0 max-w-xs p-4 animate-reveal-rise [animation-delay:210ms]">
           <p className="font-display text-2xl leading-tight text-ink">
             Frame-led design with one accent color.
           </p>
           <p className="mt-2 text-sm text-muted">
             Built for fast ad experimentation, not cluttered dashboards.
           </p>
-        </Frame>
+        </Card>
       </div>
     </section>
   );

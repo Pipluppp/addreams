@@ -1,8 +1,6 @@
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { Frame } from "../../components/atoms/Frame";
-import { PillButton } from "../../components/atoms/PillButton";
-import { SquircleSurface } from "../../components/atoms/SquircleSurface";
+import { Button, Card } from "@heroui/react";
 import { TextField } from "../../components/atoms/TextField";
 import { ToggleField } from "../../components/atoms/ToggleField";
 import { EditInstructionTextarea } from "../../components/molecules/EditInstructionTextarea";
@@ -172,202 +170,185 @@ export default function AdGraphicsRoute() {
 
     if (boundedStep === 0) {
       return (
-        <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <EditInstructionTextarea
-                id="edit-instruction"
-                label="Shoot Direction"
-                value={formValues.prompt}
-                onChange={(next) => setFormValues({ ...formValues, prompt: next })}
-                error={errors.prompt}
-              />
-              <p className="text-xs text-ink-muted">
-                Tip: use positional language, such as "replace top-right badge with matte gold
-                seal."
-              </p>
-            </div>
-          </SquircleSurface>
-        </Frame>
+        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <EditInstructionTextarea
+              id="edit-instruction"
+              label="Shoot Direction"
+              value={formValues.prompt}
+              onChange={(next) => setFormValues({ ...formValues, prompt: next })}
+              error={errors.prompt}
+            />
+            <p className="text-xs text-ink-muted">
+              Tip: use positional language, such as "replace top-right badge with matte gold seal."
+            </p>
+          </div>
+        </Card>
       );
     }
 
     if (boundedStep === 1) {
       return (
-        <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
+        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
           <div className="grid gap-4 lg:grid-cols-2">
-            <SquircleSurface asChild radius="xl" smooth="lg">
-              <div className="space-y-3 bg-canvas p-5">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  Source Type
-                </p>
-                <p className="text-xs text-ink-soft">
-                  Choose how the product image enters the workflow.
-                </p>
-                <ReferenceImageInputTabs
-                  value={formValues.referenceMode}
-                  onChange={(mode) =>
+            <div className="space-y-3 rounded-xl bg-canvas p-5">
+              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                Source Type
+              </p>
+              <p className="text-xs text-ink-soft">Choose how the product image enters the workflow.</p>
+              <ReferenceImageInputTabs
+                value={formValues.referenceMode}
+                onChange={(mode) =>
+                  setFormValues((current) => ({
+                    ...current,
+                    referenceMode: mode,
+                    referenceImageFile: mode === "upload" ? current.referenceImageFile : null,
+                    referenceImageUrl: mode === "url" ? current.referenceImageUrl : "",
+                  }))
+                }
+              />
+            </div>
+
+            <div className="space-y-3 rounded-xl bg-canvas p-5">
+              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                Product Reference
+              </p>
+              <p className="text-xs text-ink-soft">
+                Provide the source image used for targeted product edits.
+              </p>
+              {formValues.referenceMode === "url" ? (
+                <TextField
+                  id="reference-image-url"
+                  label="Reference image URL"
+                  value={formValues.referenceImageUrl}
+                  onChange={(event) =>
                     setFormValues((current) => ({
                       ...current,
-                      referenceMode: mode,
-                      referenceImageFile: mode === "upload" ? current.referenceImageFile : null,
-                      referenceImageUrl: mode === "url" ? current.referenceImageUrl : "",
+                      referenceImageUrl: event.target.value,
                     }))
                   }
+                  placeholder="https://example.com/reference-image.png"
+                  error={errors.referenceImageUrl}
                 />
-              </div>
-            </SquircleSurface>
-
-            <SquircleSurface asChild radius="xl" smooth="lg">
-              <div className="space-y-3 bg-canvas p-5">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  Product Reference
-                </p>
-                <p className="text-xs text-ink-soft">
-                  Provide the source image used for targeted product edits.
-                </p>
-                {formValues.referenceMode === "url" ? (
-                  <TextField
-                    id="reference-image-url"
-                    label="Reference image URL"
-                    value={formValues.referenceImageUrl}
-                    onChange={(event) =>
-                      setFormValues((current) => ({
-                        ...current,
-                        referenceImageUrl: event.target.value,
-                      }))
-                    }
-                    placeholder="https://example.com/reference-image.png"
-                    error={errors.referenceImageUrl}
-                  />
-                ) : (
-                  <ImageDropzone
-                    onFileSelected={handleFileSelected}
-                    error={errors.referenceImage}
-                    buttonId="reference-upload-button"
-                  />
-                )}
-              </div>
-            </SquircleSurface>
+              ) : (
+                <ImageDropzone
+                  onFileSelected={handleFileSelected}
+                  error={errors.referenceImage}
+                  buttonId="reference-upload-button"
+                />
+              )}
+            </div>
           </div>
           {previewUrl ? (
-            <SquircleSurface asChild radius="xl" smooth="lg">
-              <div className="space-y-3 bg-canvas p-5">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  Preview
-                </p>
-                <ImagePreviewCard
-                  src={previewUrl}
-                  alt="Reference preview"
-                  onSwap={() => {
-                    if (formValues.referenceMode === "upload") {
-                      setFormValues((current) => ({ ...current, referenceImageFile: null }));
-                    }
-                  }}
-                  onClear={() => {
-                    setFormValues((current) => ({
-                      ...current,
-                      referenceImageFile: null,
-                      referenceImageUrl: "",
-                    }));
-                  }}
-                />
-              </div>
-            </SquircleSurface>
+            <div className="space-y-3 rounded-xl bg-canvas p-5">
+              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                Preview
+              </p>
+              <ImagePreviewCard
+                src={previewUrl}
+                alt="Reference preview"
+                onSwap={() => {
+                  if (formValues.referenceMode === "upload") {
+                    setFormValues((current) => ({ ...current, referenceImageFile: null }));
+                  }
+                }}
+                onClear={() => {
+                  setFormValues((current) => ({
+                    ...current,
+                    referenceImageFile: null,
+                    referenceImageUrl: "",
+                  }));
+                }}
+              />
+            </div>
           ) : null}
-        </Frame>
+        </Card>
       );
     }
 
     if (boundedStep === 2) {
       return (
-        <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Exclusions
-              </p>
-              <NegativePromptTextarea
-                id="ad-graphics-negative-prompt"
-                value={formValues.negative_prompt}
-                onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
-                error={errors.negative_prompt}
-              />
-            </div>
-          </SquircleSurface>
+        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Exclusions
+            </p>
+            <NegativePromptTextarea
+              id="ad-graphics-negative-prompt"
+              value={formValues.negative_prompt}
+              onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
+              error={errors.negative_prompt}
+            />
+          </div>
 
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Output Size
-              </p>
-              <ToggleField
-                id="ad-custom-size-toggle"
-                label="Custom size mode"
-                helperText="Enable manual width and height bounds."
-                checked={formValues.sizeMode === "custom"}
-                onChange={(event) =>
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Output Size
+            </p>
+            <ToggleField
+              id="ad-custom-size-toggle"
+              label="Custom size mode"
+              helperText="Enable manual width and height bounds."
+              checked={formValues.sizeMode === "custom"}
+              onChange={(isSelected) =>
+                setFormValues({
+                  ...formValues,
+                  sizeMode: isSelected ? "custom" : "preset",
+                })
+              }
+            />
+
+            {formValues.sizeMode === "preset" ? (
+              <SizePresetSelect
+                id="ad-size-preset"
+                value={formValues.sizePreset}
+                onChange={(next) =>
                   setFormValues({
                     ...formValues,
-                    sizeMode: event.target.checked ? "custom" : "preset",
+                    sizePreset: next as typeof formValues.sizePreset,
                   })
                 }
               />
-
-              {formValues.sizeMode === "preset" ? (
-                <SizePresetSelect
-                  id="ad-size-preset"
-                  value={formValues.sizePreset}
-                  onChange={(next) =>
-                    setFormValues({
-                      ...formValues,
-                      sizePreset: next as typeof formValues.sizePreset,
-                    })
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <TextField
+                  id="custom-size-width"
+                  label="Custom width"
+                  value={formValues.customWidth}
+                  onChange={(event) =>
+                    setFormValues({ ...formValues, customWidth: event.target.value })
                   }
+                  inputMode="numeric"
+                  placeholder="1024"
                 />
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <TextField
-                    id="custom-size-width"
-                    label="Custom width"
-                    value={formValues.customWidth}
-                    onChange={(event) =>
-                      setFormValues({ ...formValues, customWidth: event.target.value })
-                    }
-                    inputMode="numeric"
-                    placeholder="1024"
-                  />
-                  <TextField
-                    id="custom-size-height"
-                    label="Custom height"
-                    value={formValues.customHeight}
-                    onChange={(event) =>
-                      setFormValues({ ...formValues, customHeight: event.target.value })
-                    }
-                    inputMode="numeric"
-                    placeholder="1024"
-                  />
-                  {errors.customSize ? (
-                    <p className="text-xs text-error sm:col-span-2">{errors.customSize}</p>
-                  ) : null}
-                </div>
-              )}
-            </div>
-          </SquircleSurface>
+                <TextField
+                  id="custom-size-height"
+                  label="Custom height"
+                  value={formValues.customHeight}
+                  onChange={(event) =>
+                    setFormValues({ ...formValues, customHeight: event.target.value })
+                  }
+                  inputMode="numeric"
+                  placeholder="1024"
+                />
+                {errors.customSize ? (
+                  <p className="text-xs text-error sm:col-span-2">{errors.customSize}</p>
+                ) : null}
+              </div>
+            )}
+          </div>
 
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Generation Option
-              </p>
-              <PromptExtendToggle
-                id="ad-prompt-extend"
-                checked={formValues.prompt_extend}
-                onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
-              />
-            </div>
-          </SquircleSurface>
-        </Frame>
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Generation Option
+            </p>
+            <PromptExtendToggle
+              id="ad-prompt-extend"
+              checked={formValues.prompt_extend}
+              onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
+            />
+          </div>
+        </Card>
       );
     }
 
@@ -381,7 +362,7 @@ export default function AdGraphicsRoute() {
         onIterate={() => setCurrentStep(2)}
         iterateLabel="Back to Controls"
         successContent={
-          <Frame className="space-y-4 p-4 sm:p-5">
+          <Card className="space-y-4 p-4 sm:p-5">
             <p className="text-sm text-ink-soft">
               {isCompleted
                 ? "Generation completed. Edited output image variants are shown below."
@@ -432,10 +413,10 @@ export default function AdGraphicsRoute() {
                 )}
               </pre>
             ) : null}
-            <PillButton
+            <Button
               type="button"
-              tone="neutral"
-              onClick={() => {
+              variant="ghost"
+              onPress={() => {
                 setFormValues(defaultAdGraphicsValues);
                 setErrors({});
                 setSubmitError(null);
@@ -443,8 +424,8 @@ export default function AdGraphicsRoute() {
               }}
             >
               Reset Draft
-            </PillButton>
-          </Frame>
+            </Button>
+          </Card>
         }
       />
     );

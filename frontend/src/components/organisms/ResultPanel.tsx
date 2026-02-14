@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
+import { Button, Card } from "@heroui/react";
 import { FrameCanvas } from "../atoms/FrameCanvas";
-import { Frame } from "../atoms/Frame";
-import { PillButton } from "../atoms/PillButton";
 
 type ResultPanelProps = {
   isPending: boolean;
@@ -34,11 +33,11 @@ export function ResultPanel({
 
   if (error) {
     return (
-      <Frame className="p-4">
+      <Card className="p-4">
         <p className="text-sm font-medium text-error" role="alert">
           {error}
         </p>
-      </Frame>
+      </Card>
     );
   }
 
@@ -54,9 +53,9 @@ export function ResultPanel({
     <div className="space-y-4">
       {successContent}
       {onIterate ? (
-        <PillButton type="button" tone="secondary" onClick={onIterate}>
+        <Button type="button" variant="secondary" onPress={onIterate}>
           {iterateLabel}
-        </PillButton>
+        </Button>
       ) : null}
     </div>
   );

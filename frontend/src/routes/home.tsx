@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
-import { Frame } from "../components/atoms/Frame";
-import { PillButton } from "../components/atoms/PillButton";
-import { SquircleSurface } from "../components/atoms/SquircleSurface";
+import { Card } from "@heroui/react";
 
 const capabilityCards = [
   {
@@ -72,7 +70,7 @@ export default function HomeRoute() {
   return (
     <>
       <section className="container-shell py-14 sm:py-18">
-        <Frame className="overflow-hidden p-6 sm:p-8 lg:p-10">
+        <Card className="overflow-hidden p-6 sm:p-8 lg:p-10">
           <div className="grid gap-7 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
             <div className="space-y-5">
               <p className="accent-type text-xs uppercase tracking-[0.2em] text-ink-muted">
@@ -87,48 +85,48 @@ export default function HomeRoute() {
                 persistent state, and review-first generation controls.
               </p>
               <div className="flex flex-wrap gap-3">
-                <PillButton tone="primary" asChild>
-                  <Link to="/product-shoots">Start Product Shoots</Link>
-                </PillButton>
-                <PillButton tone="secondary" asChild>
-                  <Link to="/ad-graphics">Start Ad Graphics</Link>
-                </PillButton>
+                <Link
+                  to="/product-shoots"
+                  className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+                >
+                  Start Product Shoots
+                </Link>
+                <Link
+                  to="/ad-graphics"
+                  className="button button--secondary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+                >
+                  Start Ad Graphics
+                </Link>
               </div>
             </div>
 
-            <Frame className="space-y-5 bg-surface-alt p-6 sm:p-7">
+            <Card className="space-y-5 bg-surface-alt p-6 sm:p-7">
               <p className="max-w-[42ch] text-sm leading-relaxed text-ink-soft">
                 Built for teams who need clean outputs, reusable settings, and fast creative
                 iteration across both workflows.
               </p>
               <div className="grid gap-3 text-sm">
-                <SquircleSurface asChild radius="xxl" smooth="xl">
-                  <div className="bg-surface px-5 py-3.5 text-ink">Creative Brief</div>
-                </SquircleSurface>
-                <SquircleSurface asChild radius="xxl" smooth="xl">
-                  <div className="bg-surface px-5 py-3.5 text-ink">Inputs + Controls</div>
-                </SquircleSurface>
-                <SquircleSurface asChild radius="xxl" smooth="xl">
-                  <div className="bg-surface px-5 py-3.5 text-ink">Review + Generate</div>
-                </SquircleSurface>
-                <SquircleSurface asChild radius="xxl" smooth="xl">
-                  <div className="bg-surface px-5 py-3.5 text-ink">Result + Iterate</div>
-                </SquircleSurface>
+                <div className="rounded-2xl bg-surface px-5 py-3.5 text-ink">Creative Brief</div>
+                <div className="rounded-2xl bg-surface px-5 py-3.5 text-ink">
+                  Inputs + Controls
+                </div>
+                <div className="rounded-2xl bg-surface px-5 py-3.5 text-ink">Review + Generate</div>
+                <div className="rounded-2xl bg-surface px-5 py-3.5 text-ink">Result + Iterate</div>
               </div>
-            </Frame>
+            </Card>
           </div>
-        </Frame>
+        </Card>
       </section>
 
       <section className="container-shell pb-7 sm:pb-10">
         <div className="grid gap-4 sm:grid-cols-3">
           {proofStats.map((item) => (
-            <Frame key={item.label} className="p-4">
+            <Card key={item.label} className="p-4">
               <p className="accent-type text-[10px] uppercase tracking-[0.18em] text-ink-muted">
                 {item.label}
               </p>
               <p className="mt-2 text-lg font-semibold text-ink">{item.value}</p>
-            </Frame>
+            </Card>
           ))}
         </div>
       </section>
@@ -144,7 +142,7 @@ export default function HomeRoute() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {capabilityCards.map((card) => (
-            <Frame key={card.title} className="space-y-3 p-4">
+            <Card key={card.title} className="space-y-3 p-4">
               <img
                 src={card.image}
                 alt={card.title}
@@ -158,20 +156,18 @@ export default function HomeRoute() {
                 <h3 className="ui-title text-ink">{card.title}</h3>
                 <p className="text-sm text-ink-soft">{card.body}</p>
               </div>
-              <SquircleSurface
-                radius="xl"
-                smooth="lg"
+              <div
                 className={
                   card.accent === "primary"
-                    ? "inline-flex bg-accent-primary px-3 py-1 text-xs text-on-primary"
+                    ? "inline-flex rounded-xl bg-accent-primary px-3 py-1 text-xs text-on-primary"
                     : card.accent === "secondary"
-                      ? "inline-flex bg-accent-secondary px-3 py-1 text-xs text-on-secondary"
-                      : "inline-flex bg-accent-highlight px-3 py-1 text-xs text-on-highlight"
+                      ? "inline-flex rounded-xl bg-accent-secondary px-3 py-1 text-xs text-on-secondary"
+                      : "inline-flex rounded-xl bg-accent-highlight px-3 py-1 text-xs text-on-highlight"
                 }
               >
                 <span className="accent-type uppercase tracking-[0.14em]">Workflow Proof</span>
-              </SquircleSurface>
-            </Frame>
+              </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -183,21 +179,19 @@ export default function HomeRoute() {
         </div>
         <div className="grid gap-4 lg:grid-cols-3">
           {pricingPlans.map((plan) => (
-            <Frame key={plan.name} className="space-y-5 p-5 sm:p-6">
+            <Card key={plan.name} className="space-y-5 p-5 sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                   <h3 className="ui-title text-ink">{plan.name}</h3>
                   <p className="text-sm text-ink-soft">Mock pricing for layout preview.</p>
                 </div>
-                <SquircleSurface
-                  radius="xxl"
-                  smooth="xl"
+                <div
                   className={
                     plan.tone === "primary"
-                      ? "bg-accent-primary px-3 py-1.5 text-xs text-on-primary"
+                      ? "rounded-2xl bg-accent-primary px-3 py-1.5 text-xs text-on-primary"
                       : plan.tone === "secondary"
-                        ? "bg-accent-secondary px-3 py-1.5 text-xs text-on-secondary"
-                        : "bg-surface-alt px-3 py-1.5 text-xs text-ink-soft"
+                        ? "rounded-2xl bg-accent-secondary px-3 py-1.5 text-xs text-on-secondary"
+                        : "rounded-2xl bg-surface-alt px-3 py-1.5 text-xs text-ink-soft"
                   }
                 >
                   <span className="accent-type uppercase tracking-[0.14em]">
@@ -207,7 +201,7 @@ export default function HomeRoute() {
                         ? "Team"
                         : "Entry"}
                   </span>
-                </SquircleSurface>
+                </div>
               </div>
               <p className="text-3xl font-semibold text-ink">
                 {plan.price}
@@ -215,28 +209,28 @@ export default function HomeRoute() {
               </p>
               <div className="grid gap-2">
                 {plan.points.map((point) => (
-                  <SquircleSurface
-                    key={point}
-                    radius="xl"
-                    smooth="lg"
-                    className="bg-surface-alt px-4 py-2.5 text-sm text-ink-soft"
-                  >
+                  <div key={point} className="rounded-xl bg-surface-alt px-4 py-2.5 text-sm text-ink-soft">
                     {point}
-                  </SquircleSurface>
+                  </div>
                 ))}
               </div>
-              <PillButton tone={plan.tone === "neutral" ? "secondary" : plan.tone} asChild>
-                <Link to={plan.tone === "primary" ? "/ad-graphics" : "/product-shoots"}>
-                  {plan.tone === "primary" ? "Choose Scale" : "Start Free"}
-                </Link>
-              </PillButton>
-            </Frame>
+              <Link
+                to={plan.tone === "primary" ? "/ad-graphics" : "/product-shoots"}
+                className={
+                  plan.tone === "primary"
+                    ? "button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+                    : "button button--secondary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+                }
+              >
+                {plan.tone === "primary" ? "Choose Scale" : "Start Free"}
+              </Link>
+            </Card>
           ))}
         </div>
       </section>
 
       <section className="container-shell py-10 sm:py-16">
-        <Frame className="space-y-6 bg-accent-highlight-soft p-6 sm:p-8">
+        <Card className="space-y-6 bg-accent-highlight-soft p-6 sm:p-8">
           <div className="space-y-3">
             <p className="accent-type text-xs uppercase tracking-[0.18em] text-ink">
               Launch Workflows
@@ -250,14 +244,20 @@ export default function HomeRoute() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <PillButton tone="primary" asChild>
-              <Link to="/product-shoots">Open Product Shoots</Link>
-            </PillButton>
-            <PillButton tone="secondary" asChild>
-              <Link to="/ad-graphics">Open Ad Graphics</Link>
-            </PillButton>
+            <Link
+              to="/product-shoots"
+              className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+            >
+              Open Product Shoots
+            </Link>
+            <Link
+              to="/ad-graphics"
+              className="button button--secondary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+            >
+              Open Ad Graphics
+            </Link>
           </div>
-        </Frame>
+        </Card>
       </section>
     </>
   );

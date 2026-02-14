@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Button } from "@heroui/react";
 import type {
   AdGraphicsValidationErrors,
   AdGraphicsFormValues,
@@ -143,10 +144,10 @@ export function AdGraphicsPanel({
             label="Custom size mode"
             helperText="Enable manual width/height constraints for image edit output."
             checked={values.sizeMode === "custom"}
-            onChange={(event) =>
+            onChange={(isSelected) =>
               onChange({
                 ...values,
-                sizeMode: event.target.checked ? "custom" : "preset",
+                sizeMode: isSelected ? "custom" : "preset",
               })
             }
           />
@@ -211,13 +212,9 @@ export function AdGraphicsPanel({
           pendingLabel="Generating Ad Graphic..."
           isPending={isPending}
         />
-        <button
-          type="button"
-          onClick={onClearForm}
-          className="bg-surface px-4 py-2 text-sm font-semibold text-ink transition-colors duration-200 hover:bg-surface-alt focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-frame focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-        >
+        <Button type="button" variant="ghost" onPress={onClearForm}>
           Clear form
-        </button>
+        </Button>
       </div>
     </form>
   );

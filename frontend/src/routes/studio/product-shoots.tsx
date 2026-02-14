@@ -1,8 +1,6 @@
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { Frame } from "../../components/atoms/Frame";
-import { PillButton } from "../../components/atoms/PillButton";
-import { SquircleSurface } from "../../components/atoms/SquircleSurface";
+import { Button, Card } from "@heroui/react";
 import { NegativePromptTextarea } from "../../components/molecules/NegativePromptTextarea";
 import { OutputFormatSelect } from "../../components/molecules/OutputFormatSelect";
 import { PromptExtendToggle } from "../../components/molecules/PromptExtendToggle";
@@ -139,93 +137,81 @@ export default function ProductShootsRoute() {
 
     if (boundedStep === 0) {
       return (
-        <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <PromptTextarea
-                id="product-prompt"
-                label="Ad Graphic Prompt"
-                value={formValues.prompt}
-                onChange={(next) => setFormValues({ ...formValues, prompt: next })}
-                error={errors.prompt}
-              />
-            </div>
-          </SquircleSurface>
-        </Frame>
+        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <PromptTextarea
+              id="product-prompt"
+              label="Ad Graphic Prompt"
+              value={formValues.prompt}
+              onChange={(next) => setFormValues({ ...formValues, prompt: next })}
+              error={errors.prompt}
+            />
+          </div>
+        </Card>
       );
     }
 
     if (boundedStep === 1) {
       return (
-        <Frame className="grid gap-4 bg-surface-alt p-5 sm:grid-cols-2 sm:p-6">
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Canvas
-              </p>
-              <p className="text-xs text-ink-soft">
-                Select a stable aspect ratio before generation so outputs are consistent.
-              </p>
-              <SizePresetSelect
-                id="product-size"
-                value={formValues.size}
-                onChange={(next) =>
-                  setFormValues({ ...formValues, size: next as typeof formValues.size })
-                }
-                error={errors.size}
-                helperText="Use approved presets for stable generation dimensions."
-              />
-            </div>
-          </SquircleSurface>
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Export
-              </p>
-              <p className="text-xs text-ink-soft">
-                Define output type early to keep review and downstream usage predictable.
-              </p>
-              <OutputFormatSelect
-                id="product-output-format"
-                value={formValues.output_format}
-                onChange={(next) => setFormValues({ ...formValues, output_format: next })}
-                error={errors.output_format}
-              />
-            </div>
-          </SquircleSurface>
-        </Frame>
+        <Card className="grid gap-4 bg-surface-alt p-5 sm:grid-cols-2 sm:p-6">
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Canvas
+            </p>
+            <p className="text-xs text-ink-soft">
+              Select a stable aspect ratio before generation so outputs are consistent.
+            </p>
+            <SizePresetSelect
+              id="product-size"
+              value={formValues.size}
+              onChange={(next) => setFormValues({ ...formValues, size: next as typeof formValues.size })}
+              error={errors.size}
+              helperText="Use approved presets for stable generation dimensions."
+            />
+          </div>
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Export
+            </p>
+            <p className="text-xs text-ink-soft">
+              Define output type early to keep review and downstream usage predictable.
+            </p>
+            <OutputFormatSelect
+              id="product-output-format"
+              value={formValues.output_format}
+              onChange={(next) => setFormValues({ ...formValues, output_format: next })}
+              error={errors.output_format}
+            />
+          </div>
+        </Card>
       );
     }
 
     if (boundedStep === 2) {
       return (
-        <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Exclusions
-              </p>
-              <NegativePromptTextarea
-                id="product-negative-prompt"
-                value={formValues.negative_prompt}
-                onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
-                error={errors.negative_prompt}
-              />
-            </div>
-          </SquircleSurface>
-          <SquircleSurface asChild radius="xl" smooth="lg">
-            <div className="space-y-3 bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Generation Option
-              </p>
-              <PromptExtendToggle
-                id="product-prompt-extend"
-                checked={formValues.prompt_extend}
-                onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
-              />
-            </div>
-          </SquircleSurface>
-        </Frame>
+        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Exclusions
+            </p>
+            <NegativePromptTextarea
+              id="product-negative-prompt"
+              value={formValues.negative_prompt}
+              onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
+              error={errors.negative_prompt}
+            />
+          </div>
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Generation Option
+            </p>
+            <PromptExtendToggle
+              id="product-prompt-extend"
+              checked={formValues.prompt_extend}
+              onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
+            />
+          </div>
+        </Card>
       );
     }
 
@@ -239,7 +225,7 @@ export default function ProductShootsRoute() {
         onIterate={() => setCurrentStep(2)}
         iterateLabel="Back to Controls"
         successContent={
-          <Frame className="space-y-4 p-4 sm:p-5">
+          <Card className="space-y-4 p-4 sm:p-5">
             <p className="text-sm text-ink-soft">
               {isCompleted
                 ? "Generation completed. Review the returned image below and iterate from controls if needed."
@@ -276,10 +262,10 @@ export default function ProductShootsRoute() {
               </pre>
             ) : null}
             <div className="flex flex-wrap gap-3">
-              <PillButton
+              <Button
                 type="button"
-                tone="neutral"
-                onClick={() => {
+                variant="ghost"
+                onPress={() => {
                   setFormValues(defaultProductShootsValues);
                   setErrors({});
                   setSubmitError(null);
@@ -287,9 +273,9 @@ export default function ProductShootsRoute() {
                 }}
               >
                 Reset Draft
-              </PillButton>
+              </Button>
             </div>
-          </Frame>
+          </Card>
         }
       />
     );

@@ -1,8 +1,7 @@
 import { useState } from "react";
+import { Card, Disclosure } from "@heroui/react";
 import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "../../lib/cn";
-import { Frame } from "../atoms/Frame";
-import { PillButton } from "../atoms/PillButton";
 
 const navItems = [
   { to: "/product-shoots", label: "Product Shoots" },
@@ -22,7 +21,7 @@ export function AppShellLayout() {
       </a>
 
       <header className="container-shell py-4">
-        <Frame className="px-4 py-3 sm:px-5">
+        <Card className="px-4 py-3 sm:px-5">
           <div className="flex items-center justify-between gap-3">
             <NavLink
               to="/"
@@ -37,14 +36,41 @@ export function AppShellLayout() {
               <span>addreams</span>
             </NavLink>
 
-            <button
-              type="button"
-              className="bg-surface px-3 py-1.5 text-xs font-semibold text-ink md:hidden"
-              onClick={() => setMenuOpen((current) => !current)}
-              aria-label="Toggle navigation"
+            <Disclosure
+              isExpanded={menuOpen}
+              onExpandedChange={setMenuOpen}
+              className="md:hidden"
             >
-              Menu
-            </button>
+              <Disclosure.Heading>
+                <Disclosure.Trigger
+                  className="rounded-lg bg-surface px-3 py-1.5 text-xs font-semibold text-ink"
+                  aria-label="Toggle navigation"
+                >
+                  Menu
+                </Disclosure.Trigger>
+              </Disclosure.Heading>
+              <Disclosure.Content>
+                <Disclosure.Body>
+                  <nav className="mt-3 flex flex-col gap-2 pt-3">
+                    {navItems.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={({ isActive }) =>
+                          cn(
+                            "bg-surface px-3 py-2 text-sm transition-colors duration-200",
+                            isActive ? "text-accent-primary" : "text-ink-soft",
+                          )
+                        }
+                        onClick={() => setMenuOpen(false)}
+                      >
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </nav>
+                </Disclosure.Body>
+              </Disclosure.Content>
+            </Disclosure>
 
             <nav className="hidden items-center gap-2 md:flex">
               {navItems.map((item) => (
@@ -63,27 +89,7 @@ export function AppShellLayout() {
               ))}
             </nav>
           </div>
-
-          {menuOpen ? (
-            <nav className="mt-3 flex flex-col gap-2 pt-3 md:hidden">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      "bg-surface px-3 py-2 text-sm transition-colors duration-200",
-                      isActive ? "text-accent-primary" : "text-ink-soft",
-                    )
-                  }
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-          ) : null}
-        </Frame>
+        </Card>
       </header>
 
       <main id="main-content">
@@ -101,9 +107,12 @@ export function AppShellLayout() {
                 Start with Product Shoots or Ad Graphics, iterate quickly, and ship with clarity.
               </p>
             </div>
-            <PillButton tone="primary" asChild>
-              <NavLink to="/product-shoots">Build your visual</NavLink>
-            </PillButton>
+            <NavLink
+              to="/product-shoots"
+              className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+            >
+              Build your visual
+            </NavLink>
           </div>
         </section>
 

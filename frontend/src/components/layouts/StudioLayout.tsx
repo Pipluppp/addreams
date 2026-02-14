@@ -1,11 +1,11 @@
 import { Outlet } from "react-router-dom";
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 import { WorkflowTabs } from "../molecules/WorkflowTabs";
 
 export function StudioLayout() {
   return (
     <div className="container-shell space-y-5 py-6 sm:py-8">
-      <Frame className="space-y-3 p-5">
+      <Card className="space-y-3 p-5">
         <p className="accent-type text-xs uppercase tracking-[0.18em] text-ink-muted">Studio</p>
         <h2 className="ui-title text-ink">Step-Based Creative Workflows</h2>
         <p className="max-w-3xl text-sm text-ink-soft">
@@ -13,7 +13,7 @@ export function StudioLayout() {
           generation controls.
         </p>
         <WorkflowTabs />
-      </Frame>
+      </Card>
       <Outlet />
     </div>
   );

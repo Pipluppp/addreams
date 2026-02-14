@@ -1,4 +1,4 @@
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 
 const values = [
   {
@@ -19,14 +19,14 @@ export function LandingValueSection() {
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {values.map((item, index) => (
-        <Frame
+        <Card
           key={item.title}
           className="p-5 animate-reveal-rise"
           style={{ animationDelay: `${index * 90}ms` }}
         >
           <h3 className="font-display text-2xl leading-tight text-ink">{item.title}</h3>
           <p className="mt-3 text-sm text-muted">{item.body}</p>
-        </Frame>
+        </Card>
       ))}
     </div>
   );

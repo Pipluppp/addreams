@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 
 export function LandingFooterCta() {
   return (
-    <Frame className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
+    <Card className="flex flex-col items-start justify-between gap-4 p-6 sm:flex-row sm:items-center">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">
           Ready to create
@@ -18,6 +18,6 @@ export function LandingFooterCta() {
       >
         Open Product Shoots
       </Link>
-    </Frame>
+    </Card>
   );
 }
