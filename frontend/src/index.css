@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght,wdth@8..144,400..800,75..125&display=swap");
 @import "tailwindcss";
+@import "@heroui/styles";
 
 @font-face {
   font-family: "Geist Pixel Circle";
@@ -63,14 +64,11 @@
   --space-8: 64px;
   --space-9: 96px;
 
-  --sq-radius-sm: 12;
-  --sq-radius-md: 18;
-  --sq-radius-lg: 24;
-  --sq-radius-xl: 32;
-
-  --sq-smooth-sm: 0.82;
-  --sq-smooth-md: 0.88;
-  --sq-smooth-lg: 0.94;
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-2xl: 42px;
 
   --animate-fade-up-micro: fade-up 220ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
   --animate-fade-up-medium: fade-up 340ms cubic-bezier(0.25, 0.1, 0.25, 1) both;
@@ -89,6 +87,36 @@
 }
 
 @layer base {
+  :root {
+    --background: var(--color-canvas);
+    --foreground: var(--color-ink);
+    --muted: var(--color-ink-muted);
+
+    --surface: var(--color-surface);
+    --surface-foreground: var(--color-ink);
+    --surface-secondary: var(--color-surface-alt);
+    --surface-secondary-foreground: var(--color-ink);
+    --surface-tertiary: var(--color-surface-alt);
+    --surface-tertiary-foreground: var(--color-ink);
+
+    --accent: var(--color-accent-primary);
+    --accent-foreground: var(--color-on-primary);
+    --success: var(--color-success);
+    --warning: var(--color-warning);
+    --danger: var(--color-error);
+
+    --border: var(--color-border);
+
+    --field-background: var(--color-surface);
+    --field-foreground: var(--color-ink);
+    --field-placeholder: var(--color-ink-muted);
+    --field-border: var(--color-border-soft);
+
+    --radius: var(--radius-lg);
+    --field-radius: var(--radius-lg);
+    --focus: var(--color-accent-primary);
+  }
+
   body {
     @apply m-0 min-h-screen bg-canvas text-ink antialiased;
     font-family: var(--font-ui);
@@ -121,6 +149,124 @@
 
   ::selection {
     @apply bg-accent-primary text-on-primary;
+  }
+
+  @supports (corner-shape: squircle) {
+    *,
+    *::before,
+    *::after {
+      corner-shape: squircle;
+    }
+  }
+}
+
+@layer components {
+  .button {
+    @apply inline-flex items-center justify-center rounded-2xl px-5 py-2.5 text-sm font-semibold transition-colors duration-200;
+  }
+
+  .button--primary {
+    @apply bg-accent-primary text-on-primary hover:bg-accent-primary-hover;
+  }
+
+  .button--secondary {
+    @apply bg-accent-secondary text-on-secondary hover:bg-accent-secondary-hover;
+  }
+
+  .button--ghost {
+    @apply bg-surface text-ink hover:bg-surface-alt hover:text-accent-primary;
+  }
+
+  .button:disabled,
+  .button[aria-disabled="true"],
+  .button[data-disabled="true"] {
+    @apply cursor-not-allowed opacity-50;
+  }
+
+  .button[data-pending="true"] {
+    @apply cursor-wait;
+  }
+
+  .card {
+    @apply rounded-xl bg-surface shadow-[0_1px_0_color-mix(in_srgb,var(--color-ink)_8%,transparent)];
+  }
+
+  .text-field {
+    @apply flex flex-col gap-2 text-sm text-ink;
+  }
+
+  .input,
+  .textarea {
+    @apply w-full rounded-lg bg-surface px-3 py-2.5 text-sm text-ink placeholder:text-ink-muted transition-colors duration-200;
+  }
+
+  .input[data-invalid="true"],
+  .textarea[data-invalid="true"],
+  [data-invalid="true"] .input,
+  [data-invalid="true"] .textarea {
+    background: color-mix(in srgb, var(--color-error) 8%, var(--color-surface));
+  }
+
+  .label {
+    @apply text-sm font-medium text-ink-soft;
+  }
+
+  .description {
+    @apply text-xs text-ink-muted;
+  }
+
+  .field-error {
+    @apply text-xs text-error;
+  }
+
+  .switch {
+    @apply flex items-start justify-between gap-3 rounded-lg bg-surface px-3 py-2.5 text-sm;
+  }
+
+  .switch__control {
+    @apply h-6 w-11 rounded-xl bg-surface-alt transition-colors duration-200;
+  }
+
+  .switch__control[data-selected="true"] {
+    @apply bg-accent-primary;
+  }
+
+  .switch__thumb {
+    @apply h-5 w-5 rounded-xl bg-surface transition-transform duration-200;
+  }
+
+  .select__trigger {
+    @apply w-full rounded-lg bg-surface px-3 py-2.5 text-sm text-ink transition-colors duration-200;
+  }
+
+  .select[data-invalid="true"] .select__trigger,
+  [data-invalid="true"] .select__trigger {
+    background: color-mix(in srgb, var(--color-error) 8%, var(--color-surface));
+  }
+
+  .select__popover {
+    @apply rounded-xl bg-surface shadow-lg;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-2 rounded-xl bg-surface px-3 py-1.5 text-xs text-ink;
+  }
+
+  .tabs__tab {
+    @apply rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-200;
+  }
+
+  .tabs__tab[data-selected="true"],
+  .tabs__tab[aria-selected="true"] {
+    @apply bg-accent-primary text-on-primary;
+  }
+
+  .tabs__tab:not([data-selected="true"]):not([aria-selected="true"]) {
+    @apply bg-surface text-ink-soft hover:bg-surface-alt hover:text-accent-primary;
+  }
+
+  [data-focus-visible="true"] {
+    @apply outline-none ring-2 ring-accent-primary ring-offset-2 ring-offset-canvas;
   }
 }
 
