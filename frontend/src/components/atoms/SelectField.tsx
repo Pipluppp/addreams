@@ -1,66 +1,78 @@
-import type { SelectHTMLAttributes } from "react";
+import { Description, FieldError, Label, ListBox, Select } from "@heroui/react";
 import { cn } from "../../lib/cn";
-import { SquircleSurface } from "./SquircleSurface";
 
 type SelectOption = {
   label: string;
   value: string;
 };
 
-type SelectFieldProps = SelectHTMLAttributes<HTMLSelectElement> & {
+type SelectFieldProps = {
   id: string;
   label: string;
   options: SelectOption[];
+  value?: string;
+  onChange?: (value: string) => void;
   helperText?: string;
   error?: string;
+  className?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  isDisabled?: boolean;
+  name?: string;
+  autoComplete?: string;
 };
 
 export function SelectField({
   id,
   label,
   options,
+  value,
+  onChange,
   helperText,
   error,
   className,
-  ...props
+  placeholder = "Select an option",
+  disabled,
+  isDisabled,
+  name,
+  autoComplete,
 }: SelectFieldProps) {
-  const fieldName = props.name ?? id;
-  const autoComplete = props.autoComplete ?? "off";
+  const fieldName = name ?? id;
+  const autoCompleteValue = autoComplete ?? "off";
 
   return (
-    <label htmlFor={id} className="flex flex-col gap-2 text-sm text-ink">
-      <span className="font-medium text-ink-soft">{label}</span>
-      <SquircleSurface asChild radius="lg" smooth="md">
-        <select
-          id={id}
-          name={fieldName}
-          autoComplete={autoComplete}
-          className={cn(
-            "w-full bg-surface px-3 py-2.5 text-sm text-ink",
-            error && "bg-[color-mix(in_srgb,var(--color-error)_8%,var(--color-surface))]",
-            className,
-          )}
-          aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${id}-error` : helperText ? `${id}-help` : undefined}
-          {...props}
-        >
+    <Select
+      name={fieldName}
+      autoComplete={autoCompleteValue}
+      value={value ?? null}
+      onChange={(next) => {
+        if (next == null || Array.isArray(next)) {
+          return;
+        }
+        onChange?.(String(next));
+      }}
+      isInvalid={Boolean(error)}
+      isDisabled={isDisabled ?? disabled}
+      placeholder={placeholder}
+      fullWidth
+      className={cn("select", className)}
+    >
+      <Label>{label}</Label>
+      <Select.Trigger className="select__trigger">
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      {helperText ? <Description>{helperText}</Description> : null}
+      {error ? <FieldError>{error}</FieldError> : null}
+      <Select.Popover className="select__popover">
+        <ListBox>
           {options.map((option) => (
-            <option key={option.value} value={option.value}>
+            <ListBox.Item key={option.value} id={option.value} textValue={option.label}>
               {option.label}
-            </option>
+            </ListBox.Item>
           ))}
-        </select>
-      </SquircleSurface>
-      {helperText ? (
-        <span id={`${id}-help`} className="text-xs text-ink-muted">
-          {helperText}
-        </span>
-      ) : null}
-      {error ? (
-        <span id={`${id}-error`} className="text-xs text-error" aria-live="polite">
-          {error}
-        </span>
-      ) : null}
-    </label>
+        </ListBox>
+      </Select.Popover>
+    </Select>
   );
 }

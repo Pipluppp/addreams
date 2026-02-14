@@ -1,5 +1,5 @@
+import { Card } from "@heroui/react";
 import type { ReactNode } from "react";
-import { Frame } from "./Frame";
 
 type SectionShellProps = {
   heading: string;
@@ -17,7 +17,7 @@ export function SectionShell({
   children,
 }: SectionShellProps) {
   return (
-    <Frame className="p-5 sm:p-7">
+    <Card className="p-5 sm:p-7">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           {eyebrow ? (
@@ -31,6 +31,6 @@ export function SectionShell({
         {actions ? <div className="shrink-0">{actions}</div> : null}
       </header>
       <div className="mt-6">{children}</div>
-    </Frame>
+    </Card>
   );
 }
