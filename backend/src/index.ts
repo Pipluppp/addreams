@@ -1,19 +1,38 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
+import {
+  DashScopeRequestError,
+  callDashScopeGeneration,
+  resolveQwenConfig,
+  type WorkerBindings,
+} from "./lib/qwen";
+import {
+  normalizeImageFromReferencePayload,
+  normalizeImageFromTextPayload,
+} from "./lib/workflow-validation";
 
-type Bindings = {
-  QWEN_API_KEY?: string;
-  QWEN_IMAGE_MODEL?: string;
-  QWEN_VIDEO_MODEL?: string;
+type WorkflowName = "image-from-text" | "image-from-reference" | "video-from-reference";
+
+type NormalizedError = {
+  error: {
+    code: string;
+    message: string;
+    providerCode?: string;
+    providerRequestId?: string;
+  };
+  requestId: string;
 };
 
-type WorkflowPayload = {
-  prompt: string;
-  referenceImageUrl?: string;
+type ProviderUsage = {
+  image_count?: number;
+  width?: number;
+  height?: number;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+const EXPIRES_IN_HOURS = 24;
+
+const app = new Hono<{ Bindings: WorkerBindings }>();
 
 app.use("/api/*", cors());
 
@@ -26,70 +45,332 @@ app.get("/api/health", (context) =>
 );
 
 app.post("/api/workflows/image-from-text", async (context) => {
+  const requestId = crypto.randomUUID();
   const body = await parseJsonBody(context);
-  if (!body) {
-    return context.json({ error: "Invalid JSON payload" }, 400);
+  if (!body.success) {
+    return validationError(context, requestId, "Invalid JSON payload.");
   }
 
-  if (!isNonEmpty(body.prompt)) {
-    return context.json({ error: "prompt is required" }, 400);
+  const normalized = normalizeImageFromTextPayload(body.data);
+  if (!normalized.success) {
+    return validationError(context, requestId, normalized.message);
   }
 
-  return stubResponse(context, "image-from-text");
+  const config = resolveQwenConfig(context.env);
+  if (!config.success) {
+    return backendConfigError(context, requestId, config.message);
+  }
+
+  try {
+    const providerBody = {
+      model: config.data.imageModel,
+      input: {
+        messages: [{ role: "user", content: [{ text: normalized.data.prompt }] }],
+      },
+      parameters: {
+        n: 1,
+        ...(normalized.data.size ? { size: normalized.data.size } : {}),
+        ...(normalized.data.negativePrompt
+          ? { negative_prompt: normalized.data.negativePrompt }
+          : {}),
+        ...(typeof normalized.data.seed === "number" ? { seed: normalized.data.seed } : {}),
+        prompt_extend: normalized.data.promptExtend,
+        watermark: normalized.data.watermark,
+      },
+    };
+
+    const providerResponse = await callDashScopeGeneration({
+      apiKey: config.data.apiKey,
+      region: config.data.region,
+      timeoutMs: config.data.timeoutMs,
+      body: providerBody,
+    });
+
+    const urls = extractImageUrls(providerResponse.payload);
+    if (urls.length === 0) {
+      return upstreamMalformedError(context, requestId, providerResponse.providerRequestId);
+    }
+
+    return context.json(
+      successPayload({
+        workflow: "image-from-text",
+        requestId,
+        model: config.data.imageModel,
+        providerPayload: providerResponse.payload,
+        providerRequestId: providerResponse.providerRequestId,
+        images: urls,
+      }),
+      200,
+    );
+  } catch (error) {
+    return handleWorkflowError(context, requestId, error);
+  }
 });
 
 app.post("/api/workflows/image-from-reference", async (context) => {
+  const requestId = crypto.randomUUID();
   const body = await parseJsonBody(context);
-  if (!body) {
-    return context.json({ error: "Invalid JSON payload" }, 400);
+  if (!body.success) {
+    return validationError(context, requestId, "Invalid JSON payload.");
   }
 
-  if (!isNonEmpty(body.prompt) || !isNonEmpty(body.referenceImageUrl)) {
-    return context.json({ error: "prompt and referenceImageUrl are required" }, 400);
+  const normalized = normalizeImageFromReferencePayload(body.data);
+  if (!normalized.success) {
+    return validationError(context, requestId, normalized.message);
   }
 
-  return stubResponse(context, "image-from-reference");
+  const config = resolveQwenConfig(context.env);
+  if (!config.success) {
+    return backendConfigError(context, requestId, config.message);
+  }
+
+  try {
+    const providerBody = {
+      model: config.data.imageEditModel,
+      input: {
+        messages: [
+          {
+            role: "user",
+            content: [
+              { image: normalized.data.referenceImage },
+              { text: normalized.data.prompt },
+            ],
+          },
+        ],
+      },
+      parameters: {
+        n: normalized.data.n,
+        ...(normalized.data.size ? { size: normalized.data.size } : {}),
+        ...(normalized.data.negativePrompt
+          ? { negative_prompt: normalized.data.negativePrompt }
+          : {}),
+        ...(typeof normalized.data.seed === "number" ? { seed: normalized.data.seed } : {}),
+        prompt_extend: normalized.data.promptExtend,
+        watermark: normalized.data.watermark,
+      },
+    };
+
+    const providerResponse = await callDashScopeGeneration({
+      apiKey: config.data.apiKey,
+      region: config.data.region,
+      timeoutMs: config.data.timeoutMs,
+      body: providerBody,
+    });
+
+    const urls = extractImageUrls(providerResponse.payload);
+    if (urls.length === 0) {
+      return upstreamMalformedError(context, requestId, providerResponse.providerRequestId);
+    }
+
+    return context.json(
+      successPayload({
+        workflow: "image-from-reference",
+        requestId,
+        model: config.data.imageEditModel,
+        providerPayload: providerResponse.payload,
+        providerRequestId: providerResponse.providerRequestId,
+        images: urls,
+      }),
+      200,
+    );
+  } catch (error) {
+    return handleWorkflowError(context, requestId, error);
+  }
 });
 
 app.post("/api/workflows/video-from-reference", async (context) => {
   const body = await parseJsonBody(context);
-  if (!body) {
+  if (!body.success) {
     return context.json({ error: "Invalid JSON payload" }, 400);
   }
 
-  if (!isNonEmpty(body.prompt) || !isNonEmpty(body.referenceImageUrl)) {
+  const payload = body.data;
+  const prompt = isRecord(payload) ? payload.prompt : undefined;
+  const referenceImageUrl = isRecord(payload) ? payload.referenceImageUrl : undefined;
+
+  if (!isNonEmpty(prompt) || !isNonEmpty(referenceImageUrl)) {
     return context.json({ error: "prompt and referenceImageUrl are required" }, 400);
   }
 
   return stubResponse(context, "video-from-reference");
 });
 
-app.onError((error, context) => {
+app.onError((_error, context) => {
+  const requestId = crypto.randomUUID();
   return context.json(
     {
-      error: "Internal server error",
-      detail: error.message,
-    },
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error.",
+      },
+      requestId,
+    } satisfies NormalizedError,
     500,
   );
 });
 
 app.notFound((context) => context.json({ error: "Not found" }, 404));
 
+function successPayload(args: {
+  workflow: Exclude<WorkflowName, "video-from-reference">;
+  requestId: string;
+  model: string;
+  providerPayload: unknown;
+  providerRequestId?: string;
+  images: string[];
+}) {
+  const usage = parseUsage(args.providerPayload);
+  const providerRequestId =
+    args.providerRequestId ??
+    (isRecord(args.providerPayload) ? readString(args.providerPayload.request_id) : undefined);
+
+  return {
+    workflow: args.workflow,
+    status: "completed" as const,
+    requestId: args.requestId,
+    provider: {
+      name: "qwen" as const,
+      requestId: providerRequestId,
+      model: args.model,
+    },
+    output: {
+      images: args.images.map((url) => ({ url })),
+      expiresInHours: EXPIRES_IN_HOURS,
+    },
+    ...(usage ? { usage } : {}),
+  };
+}
+
+function parseUsage(payload: unknown):
+  | {
+      imageCount?: number;
+      width?: number;
+      height?: number;
+    }
+  | undefined {
+  if (!isRecord(payload)) return undefined;
+  const usage = payload.usage;
+  if (!isRecord(usage)) return undefined;
+
+  const data = usage as ProviderUsage;
+  const mapped = {
+    ...(typeof data.image_count === "number" ? { imageCount: data.image_count } : {}),
+    ...(typeof data.width === "number" ? { width: data.width } : {}),
+    ...(typeof data.height === "number" ? { height: data.height } : {}),
+  };
+
+  return Object.keys(mapped).length > 0 ? mapped : undefined;
+}
+
+function extractImageUrls(payload: unknown): string[] {
+  if (!isRecord(payload)) return [];
+  const output = payload.output;
+  if (!isRecord(output)) return [];
+
+  const choices = output.choices;
+  if (!Array.isArray(choices) || choices.length === 0) return [];
+
+  const firstChoice = choices[0];
+  if (!isRecord(firstChoice)) return [];
+
+  const message = firstChoice.message;
+  if (!isRecord(message)) return [];
+
+  const content = message.content;
+  if (!Array.isArray(content)) return [];
+
+  const urls: string[] = [];
+  for (const item of content) {
+    if (!isRecord(item)) continue;
+    const url = readString(item.image);
+    if (url) urls.push(url);
+  }
+
+  return urls;
+}
+
+function handleWorkflowError(context: Context, requestId: string, error: unknown) {
+  if (error instanceof DashScopeRequestError) {
+    return context.json(
+      {
+        error: {
+          code: error.backendCode,
+          message: error.message,
+          ...(error.providerCode ? { providerCode: error.providerCode } : {}),
+          ...(error.providerRequestId ? { providerRequestId: error.providerRequestId } : {}),
+        },
+        requestId,
+      } satisfies NormalizedError,
+      error.status as 502 | 504,
+    );
+  }
+
+  return context.json(
+    {
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Internal server error.",
+      },
+      requestId,
+    } satisfies NormalizedError,
+    500,
+  );
+}
+
+function validationError(context: Context, requestId: string, message: string) {
+  return context.json(
+    {
+      error: {
+        code: "INVALID_REQUEST",
+        message,
+      },
+      requestId,
+    } satisfies NormalizedError,
+    400,
+  );
+}
+
+function backendConfigError(context: Context, requestId: string, message: string) {
+  return context.json(
+    {
+      error: {
+        code: "BACKEND_MISCONFIGURED",
+        message,
+      },
+      requestId,
+    } satisfies NormalizedError,
+    500,
+  );
+}
+
+function upstreamMalformedError(context: Context, requestId: string, providerRequestId?: string) {
+  return context.json(
+    {
+      error: {
+        code: "UPSTREAM_MALFORMED_RESPONSE",
+        message: "Image provider returned an invalid response body.",
+        ...(providerRequestId ? { providerRequestId } : {}),
+      },
+      requestId,
+    } satisfies NormalizedError,
+    502,
+  );
+}
+
 function isNonEmpty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-async function parseJsonBody(context: Context): Promise<WorkflowPayload | null> {
+async function parseJsonBody(context: Context): Promise<{ success: true; data: unknown } | { success: false }> {
   try {
-    const parsed = (await context.req.json()) as WorkflowPayload;
-    return parsed;
+    const parsed = (await context.req.json()) as unknown;
+    return { success: true, data: parsed };
   } catch {
-    return null;
+    return { success: false };
   }
 }
 
-function stubResponse(context: Context, workflow: string) {
+function stubResponse(context: Context, workflow: WorkflowName) {
   return context.json(
     {
       workflow,
@@ -99,6 +380,14 @@ function stubResponse(context: Context, workflow: string) {
     },
     202,
   );
+}
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 export default app;
