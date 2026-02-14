@@ -1,42 +1,48 @@
 # Backend Qwen Integration Plan Pack
 
-Last updated: 2026-02-12
+Last updated: 2026-02-14
 
 ## Goal
 
-Ship real Qwen image generation and image editing in the backend, deploy it on Cloudflare Workers, and verify end-to-end behavior from frontend to backend.
+Deliver a working backend workflow on Hono + Cloudflare Workers that calls official Qwen image APIs and returns generated image URLs to the frontend.
 
-## Scope For This Plan Pack
+## Scope Of This Plan Pack
 
-1. `qwen-image-max` integration for text-to-image.
-2. `qwen-image-edit-max` integration for image editing.
-3. Backend route wiring, validation, error mapping, and deployment runbook.
-4. Frontend-to-backend API path verification through the existing `/api/*` proxy.
+1. Wire `qwen-image-max` for text-to-image.
+2. Wire `qwen-image-edit-max` for image editing (single reference image flow first).
+3. Define request validation, error mapping, and route contracts for current frontend integration.
+4. Ship deploy + smoke-test runbook for production verification.
 
-## Explicitly Out Of Scope Here
+## Constraints For This Sprint
 
-1. Video generation workflow integration.
-2. New data/storage resources (D1, R2, Queues, Durable Objects).
-3. Post-MVP infra hardening work.
+1. No R2, D1, Queues, Durable Objects, or workflow persistence.
+2. No database/ORM work in the runtime path.
+3. Keep the existing frontend `/api/*` proxy architecture.
+4. Keep `video-from-reference` as deferred stub.
 
 ## Document Map
 
-1. `docs/plans/backend-qwen-integration/01-qwen-backend-roadmap.md`
-   - Staged implementation sequence for Qwen image APIs.
-2. `docs/plans/backend-qwen-integration/02-qwen-wiring-decisions.md`
-   - Locked decisions for this sprint and what is intentionally deferred.
-3. `docs/plans/backend-qwen-integration/03-deploy-runbook.md`
-   - Repo-specific deploy and verification checklist.
+1. `docs/plans/backend-qwen-integration/00-qwen-account-and-api-key-setup.md`
+   - One-time Alibaba Model Studio setup for this repo (API key, region, env/secrets).
+2. `docs/plans/backend-qwen-integration/01-qwen-backend-roadmap.md`
+   - Phase-by-phase implementation order and acceptance gates.
+3. `docs/plans/backend-qwen-integration/02-qwen-wiring-decisions.md`
+   - Locked technical decisions (`Zod now`, `Drizzle deferred`, contract shape, error policy).
+4. `docs/plans/backend-qwen-integration/03-deploy-runbook.md`
+   - Deploy checklist and smoke tests for backend + frontend proxy path.
+5. `docs/plans/backend-qwen-integration/04-qwen-wiring-quirks-and-mapping.md`
+   - Official API quirks and repo-specific payload translation matrix.
 
-## Where Deferred Infra Planning Lives
-
-1. `docs/plans/cloudflare-infra/README.md`
-2. `docs/plans/cloudflare-infra/01-post-qwen-infra-sprint.md`
-
-## Primary References
+## Source Of Truth References
 
 1. `docs/qwen-api/Qwen-Image-Max.md`
 2. `docs/qwen-api/Qwen-Image-Edit-Max.md`
-3. https://developers.cloudflare.com/workers/runtime-apis/fetch/
-4. https://developers.cloudflare.com/workers/configuration/secrets/
-5. https://developers.cloudflare.com/workers/observability/logs/tail-workers/
+3. `backend/src/index.ts`
+4. https://developers.cloudflare.com/workers/runtime-apis/fetch/
+5. https://developers.cloudflare.com/workers/configuration/secrets/
+6. https://developers.cloudflare.com/workers/observability/logs/tail-workers/
+
+## Deferred Infra Planning
+
+1. `docs/plans/cloudflare-infra/README.md`
+2. `docs/plans/cloudflare-infra/01-post-qwen-infra-sprint.md`

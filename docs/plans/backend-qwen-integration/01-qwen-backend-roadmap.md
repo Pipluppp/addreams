@@ -1,84 +1,99 @@
 # Qwen Backend Roadmap (Image APIs Only)
 
-Last updated: 2026-02-12
+Last updated: 2026-02-14
 
 ## Objective
 
-Replace stub workflow responses in `backend/src/index.ts` with real upstream Qwen calls for image generation and image editing.
+Replace workflow stubs in `backend/src/index.ts` with real Qwen calls while keeping the first release stateless (no database, no object storage).
 
-## Scope
+## In-Scope Routes
 
-1. Implement real behavior for `POST /api/workflows/image-from-text`.
-2. Implement real behavior for `POST /api/workflows/image-from-reference`.
-3. Keep `GET /api/health` and proxy routing stable.
-4. Keep response shapes predictable for frontend consumption.
+1. `POST /api/workflows/image-from-text` -> `qwen-image-max`
+2. `POST /api/workflows/image-from-reference` -> `qwen-image-edit-max`
+3. `GET /api/health` remains unchanged
 
-## Non-Goals In This Roadmap
+## Out-Of-Scope Routes
 
-1. No `video-from-reference` integration in this sprint.
-2. No D1/R2/Queues provisioning in this sprint.
-3. No auth/account/billing changes.
+1. `POST /api/workflows/video-from-reference` remains stub/deferred
 
-## Existing Internal Routes
+## Sprint Constraints
 
-1. `GET /api/health`
-2. `POST /api/workflows/image-from-text`
-3. `POST /api/workflows/image-from-reference`
-4. `POST /api/workflows/video-from-reference` (remains stub/deferred)
-
-## Upstream Mapping
-
-1. `image-from-text` -> Qwen Image Max (`qwen-image-max-latest` by default)
-2. `image-from-reference` -> Qwen Image Edit Max (`qwen-image-edit-max-latest` by default)
+1. No R2 persistence; return temporary provider URL directly.
+2. No D1 and no Drizzle runtime integration.
+3. No queue/retry worker; one request in, one upstream call out.
 
 ## Phase Plan
 
-## Phase 0: Wiring Preconditions
+## Phase 0: Contract Freeze
 
-1. Define backend env contract:
-   - `QWEN_API_KEY` (secret)
-   - `QWEN_IMAGE_MODEL` (optional; default to image max latest)
-   - `QWEN_IMAGE_EDIT_MODEL` (optional; default to image edit max latest)
-   - `QWEN_BASE_URL` (optional; default to chosen DashScope region)
-2. Keep CORS middleware for `/api/*`.
-3. Add request IDs and provider request ID passthrough in logs/responses.
+1. Lock official model defaults:
+   - `qwen-image-max`
+   - `qwen-image-edit-max`
+2. Lock backend env contract:
+   - `QWEN_API_KEY` (required secret)
+   - `QWEN_REGION` (`sg` or `bj`, default `sg`)
+   - `QWEN_IMAGE_MODEL` (optional override)
+   - `QWEN_IMAGE_EDIT_MODEL` (optional override)
+   - `QWEN_TIMEOUT_MS` (optional; default `45000`)
+3. Freeze normalized backend response shape and error shape.
 
-## Phase 1: Text-to-Image Route
+Exit criteria:
+1. Decisions doc is accepted.
+2. Quirks/mapping doc is accepted.
 
-1. Replace stub in `/api/workflows/image-from-text` with upstream fetch.
-2. Validate request payload and optional generation params.
-3. Normalize upstream response to stable internal JSON shape.
-4. Map upstream errors to clear backend API errors.
+## Phase 1: Request Validation Layer
 
-## Phase 2: Image-Edit Route
+1. Add boundary validation with Zod for both routes.
+2. Support current frontend payload envelope and normalize to internal DTO.
+3. Reject invalid payloads with deterministic `400` errors.
 
-1. Replace stub in `/api/workflows/image-from-reference` with upstream fetch.
-2. Validate prompt + reference image URL.
-3. Normalize response to same internal output schema used by text-to-image.
-4. Map upstream errors consistently with Phase 1.
+Exit criteria:
+1. Invalid payloads do not hit upstream.
+2. Validation error shape is stable.
 
-## Phase 3: Deploy And Verify
+## Phase 2: Qwen Adapter + Text Route
 
-1. Deploy backend Worker.
-2. Deploy frontend Worker.
-3. Validate direct backend health and frontend `/api/*` proxy path.
-4. Confirm CORS behavior for intended browser call path.
+1. Build shared DashScope adapter (`fetch` wrapper, headers, timeout, error parser).
+2. Wire `image-from-text` route to official sync endpoint.
+3. Parse and return image URL from `output.choices[0].message.content[0].image`.
 
-## Acceptance Checks
+Exit criteria:
+1. Route returns `200` with real generated URL.
+2. Route returns provider-aware error payload for upstream failures.
 
-1. `curl -i https://addreams-api.duncanb013.workers.dev/api/health`
-2. `curl -i https://addreams-web.duncanb013.workers.dev/api/health`
-3. Text generation request to backend route returns provider-backed response (not `status: "stub"`).
-4. Image-edit request to backend route returns provider-backed response (not `status: "stub"`).
-5. `video-from-reference` endpoint is still clearly marked deferred/stub.
+## Phase 3: Edit Route
 
-## Deferred Work
+1. Wire `image-from-reference` to `qwen-image-edit-max`.
+2. Normalize single-image input now (multi-image deferred at public API layer).
+3. Parse and return all images from `output.choices[0].message.content[].image`.
 
-All storage/database/queue enhancements are moved to the separate infra sprint docs under `docs/plans/cloudflare-infra/`.
+Exit criteria:
+1. Route returns `200` with at least one image URL.
+2. URL/Base64 reference input both work.
 
-## References
+## Phase 4: Deploy + End-To-End Verification
 
-1. `docs/qwen-api/Qwen-Image-Max.md`
-2. `docs/qwen-api/Qwen-Image-Edit-Max.md`
-3. https://developers.cloudflare.com/workers/runtime-apis/fetch/
-4. https://developers.cloudflare.com/workers/configuration/secrets/
+1. Deploy backend then frontend.
+2. Verify:
+   - backend direct route
+   - frontend proxy route
+   - error path behavior
+3. Keep `video-from-reference` explicitly stubbed.
+
+Exit criteria:
+1. Non-stub responses from both image routes.
+2. No CORS/proxy regressions.
+
+## Success Criteria (MVP)
+
+1. User submits prompt in frontend and receives real generated image URL.
+2. User submits reference image + edit prompt and receives real edited image URL.
+3. Every successful response includes backend `requestId` and provider `request_id`.
+4. Provider temporary URL behavior (24h) is documented and visible in response metadata.
+
+## Deferred To Next Sprint
+
+1. R2 persistence for durable image URLs.
+2. D1 + Drizzle for job history/audit.
+3. Queue-based retries/background processing.
+4. Service binding hardening between frontend and backend Workers.

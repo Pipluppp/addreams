@@ -1,53 +1,58 @@
 # Qwen-Image-Edit-Max API Reference (DashScope)
 
-Source docs (Alibaba Cloud Model Studio):
+Self-contained implementation reference for `qwen-image-edit-max` in Addreams.
+
+Official sources:
 - https://www.alibabacloud.com/help/en/model-studio/qwen-image-edit-api
-- https://www.alibabacloud.com/help/en/model-studio/models
+- https://www.alibabacloud.com/help/en/model-studio/model-pricing
+- https://www.alibabacloud.com/help/en/model-studio/rate-limit
+- https://www.alibabacloud.com/help/en/model-studio/error-code
 
-Doc page last updated: `2026-02-09` (per source page).
+Verified against official docs on `2026-02-14`.
 
-## Model IDs
+## Supported model IDs
 
-- `qwen-image-edit-max-latest` (dynamic alias, default recommended in docs)
-- `qwen-image-edit-max-2025-01-23` (fixed snapshot)
+- `qwen-image-edit-max`
+- `qwen-image-edit-max-2026-01-16` (snapshot)
 
-## Endpoint
+`qwen-image-edit-max` currently has the same capabilities as `qwen-image-edit-max-2026-01-16`.
 
-Image editing endpoint:
+## Endpoint and Region
 
-- China (Beijing): `POST https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation`
+Synchronous API endpoint:
 - Singapore: `POST https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation`
+- Beijing: `POST https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation`
 
-OpenAI-compatible endpoint:
+Important:
+- Singapore and Beijing use different API keys.
+- Do not mix key/endpoint regions.
 
-- China (Beijing): `POST https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions`
-- Singapore: `POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions`
-
-## Authentication Headers
+## Headers
 
 - `Authorization: Bearer $DASHSCOPE_API_KEY`
 - `Content-Type: application/json`
 
-## Request Body (native DashScope endpoint)
+## Request schema
 
 ```json
 {
-  "model": "qwen-image-edit-max-latest",
+  "model": "qwen-image-edit-max",
   "input": {
     "messages": [
       {
         "role": "user",
         "content": [
-          { "type": "image", "image": "https://example.com/source.png" },
-          { "type": "text", "text": "Editing instructions here" }
+          { "image": "https://example.com/input1.png" },
+          { "image": "https://example.com/input2.png" },
+          { "text": "Make the subject in Image 1 wear the outfit from Image 2." }
         ]
       }
     ]
   },
   "parameters": {
-    "n": 1,
-    "negative_prompt": "optional negative prompt",
-    "size": "1328*1328",
+    "n": 2,
+    "negative_prompt": "blurry, low quality",
+    "size": "1024*1536",
     "prompt_extend": true,
     "watermark": false,
     "seed": 123456
@@ -55,105 +60,200 @@ OpenAI-compatible endpoint:
 }
 ```
 
-## Input Parameters
+### Required fields
 
-### Required
+- `model`: `qwen-image-edit-max` (or snapshot ID).
+- `input.messages`: exactly one message.
+- `input.messages[0].role`: must be `user`.
+- `input.messages[0].content`: must include:
+  - `1` to `3` image objects: `{ "image": "<url-or-base64>" }`
+  - exactly one text instruction: `{ "text": "..." }`
 
-- `model` (`string`)
-- `input.messages` (`array`)
-- `input.messages[].role` (docs show `user`)
-- `input.messages[].content[]` (`array`)
-  - `image` objects: `{"type":"image","image":"..."}`
-  - one `text` instruction object: `{"type":"text","text":"..."}`
+### Image input rules
 
-### Image Input Rules
+- Supported formats: `JPG`, `JPEG`, `PNG`, `BMP`, `TIFF`, `WEBP`, `GIF`.
+- GIF: only first frame is processed.
+- Max file size per image: `10 MB`.
+- Recommended dimensions: both width/height between `384` and `3072` px.
+- Input can be public URL (`http` or `https`) or Base64 data URI.
 
-- Accepted formats: `JPG`, `JPEG`, `PNG`, `BMP`, `WEBP`, `TIFF`, `GIF`
-- Max size per image: `10 MB`
-- Recommended resolution: between `384x384` and `3072x3072`
-- GIF support uses the first frame only
-- `image` value can be URL, Base64 string, or local file path (SDK scenarios)
+Base64 format must include prefix:
 
-Note on count limits in current docs:
-- Model overview text says up to `6` images.
-- Request parameter table currently states `1` to `3` images in `content`.
-- For backend safety, enforce `<=3` unless Alibaba updates this API schema.
+`data:image/jpeg;base64,/9j/4AAQSk...`
 
-### Prompting Guidance (from docs)
+### Parameter rules
 
-- With multiple images, reference order explicitly (`first image`, `second image`, etc.).
-- For local edits, describe location precisely (`top-left`, `background`, `logo area`).
-- For text edits inside an image, specify target text and location.
+- `text` max length: `800` chars (auto-truncated if longer).
+- `negative_prompt` max length: `500` chars (auto-truncated if longer).
+- `n` default: `1`; max-series supports `1` to `6`.
+- `seed` range: `[0, 2147483647]`.
+- `prompt_extend` default: `true`.
+- `watermark` default: `false`.
 
-### Optional (`parameters`)
+`size` (supported in max/plus series):
+- Format: `width*height`
+- Width and height range: `[512, 2048]`
+- Service rounds to nearest multiples of 16.
+- If omitted, output keeps aspect ratio close to input (or last input image in multi-image mode), around `1024*1024`.
 
-- `n` (`integer`, default `1`, range `1-4`)
-- `negative_prompt` (`string`, optional)
-- `size` (`string`, optional)
-  - If omitted, output keeps source aspect ratio.
-  - If multiple images are provided, ratio follows the last input image.
-  - Supported fixed values include `1664*928`, `1472*1140`, `1328*1328`, `1140*1472`, `928*1664`.
-  - Custom size rules:
-    - Width and height each in `[512, 2048]`
-    - `width * height` in `[262144, 4194304]`
-    - Values should be multiples of `16` (non-multiples are rounded to nearest multiple)
-- `prompt_extend` (`boolean`, default `true`)
-- `watermark` (`boolean`, default `false`)
-- `seed` (`integer`, range `[0, 2147483647]`)
-
-## Response Schema
+## Success response shape
 
 ```json
 {
   "output": {
     "choices": [
       {
+        "finish_reason": "stop",
         "message": {
+          "role": "assistant",
           "content": [
-            {
-              "type": "image",
-              "image_url": {
-                "url": "https://..."
-              }
-            }
-          ],
-          "role": "assistant"
+            { "image": "https://dashscope-result-xx.oss-cn-xxxx.aliyuncs.com/1.png?Expires=xxx" },
+            { "image": "https://dashscope-result-xx.oss-cn-xxxx.aliyuncs.com/2.png?Expires=xxx" }
+          ]
         }
       }
     ]
   },
   "usage": {
-    "total_tokens": 1045,
-    "image_tokens": 1045
+    "image_count": 2,
+    "width": 1024,
+    "height": 1536
   },
-  "request_id": "string"
+  "request_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 }
 ```
 
-Notes:
-- Output format for this model is `png` (per model overview).
-- Generated image URLs are temporary (docs indicate about 24 hours).
+Image URLs path:
 
-## Error Response Schema
+`output.choices[0].message.content[].image`
+
+For `n > 1`, multiple image objects are returned in `message.content`.
+
+## Error response shape
 
 ```json
 {
+  "request_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "code": "InvalidApiKey",
-  "message": "Invalid API-key provided.",
-  "request_id": "string"
+  "message": "Invalid API-key provided."
 }
 ```
 
-## Async Support
+## Operational behavior
 
-Current image-edit API reference shows synchronous generation flow on this endpoint.
-In the official SDK notes for this page, async APIs are explicitly marked as not supported.
+- Output format is PNG.
+- Output image URLs are valid for ~24 hours.
+- Task data and URLs are retained for 24 hours only.
+- Persist generated images immediately if durable access is required.
 
-## Backend Integration Notes
+## Image URL allowlist (if your network blocks public OSS)
 
-- Validate content contract as exactly: one instruction text + image inputs.
-- Apply server-side image prechecks (format, size, resolution) before sending upstream.
-- Normalize and validate `size` with the documented bounds and multiple-of-16 behavior.
-- Persist generated image URLs to R2 quickly because links are temporary.
-- Record `seed`, `prompt_extend`, and final upstream request payload for reproducibility.
+If outbound access is restricted, allow these hosts:
 
+```txt
+dashscope-result-bj.oss-cn-beijing.aliyuncs.com
+dashscope-result-hz.oss-cn-hangzhou.aliyuncs.com
+dashscope-result-sh.oss-cn-shanghai.aliyuncs.com
+dashscope-result-wlcb.oss-cn-wulanchabu.aliyuncs.com
+dashscope-result-zjk.oss-cn-zhangjiakou.aliyuncs.com
+dashscope-result-sz.oss-cn-shenzhen.aliyuncs.com
+dashscope-result-hy.oss-cn-heyuan.aliyuncs.com
+dashscope-result-cd.oss-cn-chengdu.aliyuncs.com
+dashscope-result-gz.oss-cn-guangzhou.aliyuncs.com
+dashscope-result-wlcb-acdr-1.oss-cn-wulanchabu-acdr-1.aliyuncs.com
+```
+
+## Billing and quotas
+
+Pricing, free quota, and rate limits are region-specific and can change. Check:
+- https://www.alibabacloud.com/help/en/model-studio/model-pricing
+- https://www.alibabacloud.com/help/en/model-studio/rate-limit
+
+## Async support
+
+Asynchronous API is not supported for Qwen image editing models in this API.
+
+## Addreams backend checklist
+
+- Enforce exactly 1 text instruction and 1-3 image inputs.
+- Validate image transport format (URL or Base64 data URI).
+- Validate image size <= 10 MB before upstream call when possible.
+- Validate `n` in `1..6` for `qwen-image-edit-max`.
+- Validate `size` bounds (`512..2048`) if provided.
+- Return and log `request_id` for support/debugging.
+- Surface `code` and `message` from DashScope as structured API errors.
+- Persist output images if frontend needs URLs beyond 24h.
+
+## Cloudflare Worker fetch example (TypeScript)
+
+```ts
+type ImageInput = { image: string };
+type QwenImageEditRequest = {
+  images: string[];
+  prompt: string;
+  negativePrompt?: string;
+  n?: number;
+  size?: string;
+  seed?: number;
+  promptExtend?: boolean;
+  watermark?: boolean;
+};
+
+export async function editWithQwenImageEditMax(
+  req: QwenImageEditRequest,
+  apiKey: string,
+  region: "sg" | "bj" = "sg",
+): Promise<{ imageUrls: string[]; requestId: string }> {
+  if (req.images.length < 1 || req.images.length > 3) {
+    throw new Error("qwen-image-edit-max requires 1 to 3 input images");
+  }
+
+  const endpoint =
+    region === "sg"
+      ? "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+      : "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+
+  const content: Array<ImageInput | { text: string }> = [
+    ...req.images.map((image) => ({ image })),
+    { text: req.prompt },
+  ];
+
+  const body = {
+    model: "qwen-image-edit-max",
+    input: {
+      messages: [{ role: "user", content }],
+    },
+    parameters: {
+      n: req.n ?? 1,
+      negative_prompt: req.negativePrompt ?? "",
+      prompt_extend: req.promptExtend ?? true,
+      watermark: req.watermark ?? false,
+      ...(req.size ? { size: req.size } : {}),
+      ...(typeof req.seed === "number" ? { seed: req.seed } : {}),
+    },
+  };
+
+  const resp = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const json = (await resp.json()) as any;
+  if (!resp.ok || json.code) {
+    throw new Error(`${json.code ?? resp.status}: ${json.message ?? "Qwen call failed"}`);
+  }
+
+  const imageUrls =
+    json?.output?.choices?.[0]?.message?.content
+      ?.map((x: any) => x?.image)
+      .filter(Boolean) ?? [];
+
+  if (!imageUrls.length) throw new Error("Missing image URLs in Qwen response");
+
+  return { imageUrls, requestId: json.request_id };
+}
+```

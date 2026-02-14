@@ -1,149 +1,236 @@
 # Qwen-Image-Max API Reference (DashScope)
 
-Source docs (Alibaba Cloud Model Studio):
+Self-contained implementation reference for `qwen-image-max` in Addreams.
+
+Official sources:
 - https://www.alibabacloud.com/help/en/model-studio/qwen-image-api
-- https://www.alibabacloud.com/help/en/model-studio/models
+- https://www.alibabacloud.com/help/en/model-studio/model-pricing
+- https://www.alibabacloud.com/help/en/model-studio/rate-limit
+- https://www.alibabacloud.com/help/en/model-studio/error-code
 
-Doc page last updated: `2026-02-02` (per source page).
+Verified against official docs on `2026-02-14`.
 
-## Model IDs
+## Supported model IDs
 
-- `qwen-image-max-latest` (dynamic alias, default recommended in docs)
-- `qwen-image-max-2025-01-23` (fixed snapshot)
+- `qwen-image-max`
+- `qwen-image-max-2025-12-30` (snapshot)
 
-## Endpoint
+`qwen-image-max` currently has the same capabilities as `qwen-image-max-2025-12-30`.
 
-Image generation endpoint:
+## Endpoint and Region
 
-- China (Beijing): `POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis`
-- Singapore: `POST https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text2image/image-synthesis`
+Synchronous API endpoint (recommended):
+- Singapore: `POST https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation`
+- Beijing: `POST https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation`
 
-OpenAI-compatible endpoint:
+Important:
+- Singapore and Beijing use different API keys.
+- Do not mix key/endpoint regions.
 
-- China (Beijing): `POST https://dashscope.aliyuncs.com/compatible-mode/v1/images/generations`
-- Singapore: `POST https://dashscope-intl.aliyuncs.com/compatible-mode/v1/images/generations`
-
-## Authentication Headers
+## Headers
 
 - `Authorization: Bearer $DASHSCOPE_API_KEY`
 - `Content-Type: application/json`
 
-## Request Body (native DashScope endpoint)
+## Request schema
 
 ```json
 {
-  "model": "qwen-image-max-latest",
+  "model": "qwen-image-max",
   "input": {
     "messages": [
       {
         "role": "user",
         "content": [
-          { "type": "text", "text": "Prompt text here" }
+          { "text": "A realistic photo of a mountain at sunset" }
         ]
       }
     ]
   },
   "parameters": {
-    "size": "1328*1328",
+    "negative_prompt": "blurry, low quality",
+    "size": "1664*928",
     "n": 1,
-    "seed": 123456,
     "prompt_extend": true,
     "watermark": false,
-    "response_format": "url",
-    "output_format": "png",
-    "negative_prompt": "optional negative prompt"
+    "seed": 123456
   }
 }
 ```
 
-## Input Parameters
+### Required fields
 
-### Required
+- `model`: must be `qwen-image-max` (or snapshot ID).
+- `input.messages`: exactly one message.
+- `input.messages[0].role`: must be `user`.
+- `input.messages[0].content`: exactly one text object: `{ "text": "..." }`.
 
-- `model` (`string`)
-- `input.messages` (`array`)
-- `input.messages[].role` (`system | user`)
-- `input.messages[].content[]` (`array`)
-- `input.messages[].content[].type` (`text` or `image`)
-  - For text prompts: use `{"type":"text","text":"..."}`
-  - For image content: use `{"type":"image","image":"<url>"}` when needed by the doc schema
+### Parameter rules
 
-### Optional (`parameters`)
+- `text` max length: `800` chars (auto-truncated if longer).
+- `negative_prompt` max length: `500` chars (auto-truncated if longer).
+- `n` is currently fixed to `1`; any other value fails.
+- `seed` range: `[0, 2147483647]`.
+- `prompt_extend` default: `true`.
+- `watermark` default: `false`.
 
-- `size` (`string`, default `1328*1328`)
-  - Allowed fixed sizes: `1664*928`, `1472*1140`, `1328*1328`, `1140*1472`, `928*1664`
-- `n` (`integer`, default `1`)
-  - `qwen-image-max` supports only `1` (doc explicitly states this)
-- `seed` (`integer`, optional)
-  - Range: `[0, 2147483647]`
-- `prompt_extend` (`boolean`, default `true`)
-  - Enables automatic prompt rewrite/extension
-- `watermark` (`boolean`, default `false`)
-- `response_format` (`string`, default `url`)
-  - `url` or `b64_json`
-- `output_format` (`string`, default `png`)
-  - `png` or `jpg`
-- `negative_prompt` (`string`, optional)
+### Allowed `size` values
 
-### Prompt Length Limits
+- `1664*928` (default, 16:9)
+- `1472*1104` (4:3)
+- `1328*1328` (1:1)
+- `1104*1472` (3:4)
+- `928*1664` (9:16)
 
-For `qwen-image-max`:
-- `prompt` length: up to 500 Chinese characters
-- `negative_prompt` length: up to 500 Chinese characters
-
-## Synchronous Response Schema
+## Success response shape
 
 ```json
 {
   "output": {
-    "task_id": "string",
-    "task_status": "SUCCEEDED",
-    "submit_time": "1739792455172",
-    "scheduled_time": "1739792455173",
-    "end_time": "1739792468852",
-    "results": [
+    "choices": [
       {
-        "orig_prompt": "original prompt",
-        "revised_prompt": "rewritten prompt",
-        "url": "https://..."
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "content": [
+            { "image": "https://dashscope-result-xx.oss-cn-xxxx.aliyuncs.com/xxx.png?Expires=xxx" }
+          ]
+        }
       }
-    ]
+    ],
+    "task_metric": {
+      "TOTAL": 1,
+      "SUCCEEDED": 1,
+      "FAILED": 0
+    }
   },
   "usage": {
-    "image_count": 1
+    "image_count": 1,
+    "width": 1664,
+    "height": 928
   },
-  "request_id": "string"
+  "request_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 }
 ```
 
-Notes:
-- If `response_format = b64_json`, each result includes `b64_json` instead of URL.
-- Async task query examples in the same docs may return the rewritten prompt as `actual_prompt`.
-- Generated URL validity in docs: about 24 hours.
+Image URL path:
 
-## Error Response Schema
+`output.choices[0].message.content[0].image`
+
+## Error response shape
 
 ```json
 {
-  "code": "InvalidApiKey",
-  "message": "Invalid API-key provided.",
-  "request_id": "string"
+  "request_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "code": "InvalidParameter",
+  "message": "num_images_per_prompt must be 1"
 }
 ```
 
-Common HTTP statuses listed by docs include `400`, `401`, `403`, `404`, `413`, `500`.
+## Operational behavior
 
-## Async Mode Support (Important)
+- Output format is PNG.
+- Output image URL is valid for ~24 hours.
+- Task data and URL are retained for 24 hours only.
+- Persist the generated image immediately if it must be durable.
 
-The same API reference has an async mode (`"parameters": { "async": "enable" }` + `GET /api/v1/tasks/{task_id}`), but docs explicitly limit that async flow to:
-- `qwen-image-plus`
-- `qwen-image`
+## Image URL allowlist (if your network blocks public OSS)
 
-For backend integration with `qwen-image-max`, treat synchronous mode as the supported path.
+If outbound access is restricted, allow these hosts:
 
-## Backend Integration Notes
+```txt
+dashscope-result-bj.oss-cn-beijing.aliyuncs.com
+dashscope-result-hz.oss-cn-hangzhou.aliyuncs.com
+dashscope-result-sh.oss-cn-shanghai.aliyuncs.com
+dashscope-result-wlcb.oss-cn-wulanchabu.aliyuncs.com
+dashscope-result-zjk.oss-cn-zhangjiakou.aliyuncs.com
+dashscope-result-sz.oss-cn-shenzhen.aliyuncs.com
+dashscope-result-hy.oss-cn-heyuan.aliyuncs.com
+dashscope-result-cd.oss-cn-chengdu.aliyuncs.com
+dashscope-result-gz.oss-cn-guangzhou.aliyuncs.com
+dashscope-result-wlcb-acdr-1.oss-cn-wulanchabu-acdr-1.aliyuncs.com
+```
 
-- Keep `n=1` for `qwen-image-max`; validate this before calling upstream.
-- Persist generated URLs to R2 immediately; returned URLs are temporary.
-- Store both `orig_prompt` and rewritten prompt (`revised_prompt` / `actual_prompt`) for traceability.
-- Expose `seed` and `prompt_extend` in internal API DTOs so behavior is reproducible and controllable.
+## Billing and quotas
+
+Pricing, free quota, and rate limits are region-specific and can change. Check:
+- https://www.alibabacloud.com/help/en/model-studio/model-pricing
+- https://www.alibabacloud.com/help/en/model-studio/rate-limit
+
+## Async support
+
+`qwen-image-max` does not support asynchronous API calls.
+
+Only `qwen-image-plus` and `qwen-image` support async endpoints.
+
+## Addreams backend checklist
+
+- Enforce exactly 1 message and exactly 1 text content item.
+- Enforce `n = 1`.
+- Validate `size` against the allowed set.
+- Return and store `request_id` for troubleshooting.
+- Surface `code` and `message` from DashScope as structured API errors.
+- Download/persist image to durable storage if URLs are needed beyond 24h.
+
+## Cloudflare Worker fetch example (TypeScript)
+
+```ts
+type QwenImageMaxRequest = {
+  prompt: string;
+  negativePrompt?: string;
+  size?: "1664*928" | "1472*1104" | "1328*1328" | "1104*1472" | "928*1664";
+  seed?: number;
+  promptExtend?: boolean;
+  watermark?: boolean;
+};
+
+export async function generateQwenImageMax(
+  req: QwenImageMaxRequest,
+  apiKey: string,
+  region: "sg" | "bj" = "sg",
+): Promise<{ imageUrl: string; requestId: string }> {
+  const endpoint =
+    region === "sg"
+      ? "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation"
+      : "https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation";
+
+  const body = {
+    model: "qwen-image-max",
+    input: {
+      messages: [
+        {
+          role: "user",
+          content: [{ text: req.prompt }],
+        },
+      ],
+    },
+    parameters: {
+      n: 1,
+      size: req.size ?? "1664*928",
+      negative_prompt: req.negativePrompt ?? "",
+      prompt_extend: req.promptExtend ?? true,
+      watermark: req.watermark ?? false,
+      ...(typeof req.seed === "number" ? { seed: req.seed } : {}),
+    },
+  };
+
+  const resp = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const json = (await resp.json()) as any;
+  if (!resp.ok || json.code) {
+    throw new Error(`${json.code ?? resp.status}: ${json.message ?? "Qwen call failed"}`);
+  }
+
+  const imageUrl = json?.output?.choices?.[0]?.message?.content?.[0]?.image;
+  if (!imageUrl) throw new Error("Missing image URL in Qwen response");
+
+  return { imageUrl, requestId: json.request_id };
+}
+```

@@ -1,3 +1,6 @@
 QWEN_API_KEY=replace-me
-QWEN_IMAGE_MODEL=Qwen-Image-Max
+QWEN_REGION=sg
+QWEN_IMAGE_MODEL=qwen-image-max
+QWEN_IMAGE_EDIT_MODEL=qwen-image-edit-max
+QWEN_TIMEOUT_MS=45000
 QWEN_VIDEO_MODEL=Wan-Image-to-Video
