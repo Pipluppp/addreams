@@ -1,5 +1,6 @@
+import { FieldError, Label, TextArea, TextField as HeroTextField } from "@heroui/react";
 import { MAX_PROMPT_LENGTH } from "../../features/parameters/constants";
-import { TextareaField } from "../atoms/TextareaField";
+import { cn } from "../../lib/cn";
 
 type PromptTextareaProps = {
   id: string;
@@ -22,19 +23,22 @@ export function PromptTextarea({
   const warning = length >= SOFT_WARNING_THRESHOLD;
 
   return (
-    <div className="space-y-2">
-      <TextareaField
+    <HeroTextField isInvalid={Boolean(error)} className="text-field">
+      <Label>{label}</Label>
+      <TextArea
         id={id}
-        label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder="Describe the product scene, style, and composition..."
         rows={5}
-        error={error}
+        maxLength={MAX_PROMPT_LENGTH}
       />
-      <p className={warning ? "text-xs text-warning" : "text-xs text-ink-muted"}>
-        {length}/{MAX_PROMPT_LENGTH}
-      </p>
-    </div>
+      <div className="flex items-center justify-between gap-2">
+        {error ? <FieldError>{error}</FieldError> : <span />}
+        <span className={cn("text-xs tabular-nums", warning ? "text-warning" : "text-ink-muted")}>
+          {length}/{MAX_PROMPT_LENGTH}
+        </span>
+      </div>
+    </HeroTextField>
   );
 }

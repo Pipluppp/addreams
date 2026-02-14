@@ -19,7 +19,7 @@ export function OutputFormatSelect({ id, value, onChange, error }: OutputFormatS
       id={id}
       label="Output Format"
       value={value}
-      onChange={(event) => onChange(event.target.value as "png" | "jpg")}
+      onChange={(next) => onChange(next as "png" | "jpg")}
       options={options}
       error={error}
       helperText="Use png or jpg output for generation."

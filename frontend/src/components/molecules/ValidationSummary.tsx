@@ -1,4 +1,4 @@
-import { Frame } from "../atoms/Frame";
+import { Card } from "@heroui/react";
 
 type ValidationSummaryProps = {
   title?: string;
@@ -10,7 +10,7 @@ export function ValidationSummary({
   checks,
 }: ValidationSummaryProps) {
   return (
-    <Frame className="space-y-3 p-4">
+    <Card className="space-y-3 p-4">
       <h3 className="text-sm font-semibold text-ink">{title}</h3>
       <ul className="space-y-2 text-sm text-ink-soft">
         {checks.map((check) => (
@@ -28,6 +28,6 @@ export function ValidationSummary({
           </li>
         ))}
       </ul>
-    </Frame>
+    </Card>
   );
 }

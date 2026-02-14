@@ -1,4 +1,4 @@
-import { PillButton } from "../atoms/PillButton";
+import { Button } from "@heroui/react";
 
 type GenerateButtonProps = {
   label?: string;
@@ -14,8 +14,8 @@ export function GenerateButton({
   disabled,
 }: GenerateButtonProps) {
   return (
-    <PillButton type="submit" disabled={disabled || isPending}>
+    <Button type="submit" variant="primary" isPending={isPending} isDisabled={disabled || isPending}>
       {isPending ? pendingLabel : label}
-    </PillButton>
+    </Button>
   );
 }

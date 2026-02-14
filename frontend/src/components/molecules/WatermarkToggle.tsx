@@ -13,7 +13,7 @@ export function WatermarkToggle({ id, checked, onChange }: WatermarkToggleProps)
       label="Watermark"
       helperText="Attach an output watermark for content provenance."
       checked={checked}
-      onChange={(event) => onChange(event.target.checked)}
+      onChange={(isSelected) => onChange(isSelected)}
     />
   );
 }

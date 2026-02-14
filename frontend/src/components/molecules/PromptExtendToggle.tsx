@@ -13,7 +13,7 @@ export function PromptExtendToggle({ id, checked, onChange }: PromptExtendToggle
       label="Prompt Extend"
       helperText="Allow the model to rewrite and extend your prompt."
       checked={checked}
-      onChange={(event) => onChange(event.target.checked)}
+      onChange={(isSelected) => onChange(isSelected)}
     />
   );
 }

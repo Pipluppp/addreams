@@ -1,5 +1,4 @@
-import { Frame } from "../atoms/Frame";
-import { PillButton } from "../atoms/PillButton";
+import { Button, Card } from "@heroui/react";
 
 type ImagePreviewCardProps = {
   src: string;
@@ -10,7 +9,7 @@ type ImagePreviewCardProps = {
 
 export function ImagePreviewCard({ src, alt, onSwap, onClear }: ImagePreviewCardProps) {
   return (
-    <Frame className="space-y-3 p-3">
+    <Card className="space-y-3 p-3">
       <div className="flex max-h-[65vh] min-h-52 w-full items-center justify-center overflow-hidden rounded-xl bg-canvas p-2 sm:min-h-60 sm:max-h-[32rem]">
         <img
           src={src}
@@ -23,13 +22,13 @@ export function ImagePreviewCard({ src, alt, onSwap, onClear }: ImagePreviewCard
         />
       </div>
       <div className="flex flex-wrap gap-2">
-        <PillButton type="button" tone="neutral" onClick={onSwap} className="px-3 py-1 text-xs">
+        <Button type="button" variant="ghost" onPress={onSwap} className="px-3 py-1 text-xs">
           Swap image
-        </PillButton>
-        <PillButton type="button" tone="neutral" onClick={onClear} className="px-3 py-1 text-xs">
+        </Button>
+        <Button type="button" variant="ghost" onPress={onClear} className="px-3 py-1 text-xs">
           Clear
-        </PillButton>
+        </Button>
       </div>
-    </Frame>
+    </Card>
   );
 }

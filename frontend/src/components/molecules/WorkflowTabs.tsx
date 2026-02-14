@@ -1,41 +1,46 @@
-import { NavLink } from "react-router-dom";
-import { cn } from "../../lib/cn";
-import { SquircleSurface } from "../atoms/SquircleSurface";
+import { Tabs } from "@heroui/react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type WorkflowTabsProps = {
   className?: string;
 };
 
 const tabs = [
-  { label: "Product Shoots", to: "/product-shoots" },
-  { label: "Ad Graphics", to: "/ad-graphics" },
+  { id: "/product-shoots", label: "Product Shoots" },
+  { id: "/ad-graphics", label: "Ad Graphics" },
 ];
+const DEFAULT_WORKFLOW_TAB = "/product-shoots";
 
 export function WorkflowTabs({ className }: WorkflowTabsProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const selectedKey =
+    tabs.find((tab) => location.pathname.startsWith(tab.id))?.id ?? DEFAULT_WORKFLOW_TAB;
+
   return (
-    <div
-      className={cn("flex flex-wrap gap-2", className)}
-      role="tablist"
+    <Tabs
+      selectedKey={selectedKey}
+      onSelectionChange={(key) => navigate(String(key))}
+      className={className}
       aria-label="Workflow routes"
+      hideSeparator
     >
+      <Tabs.ListContainer>
+        <Tabs.List aria-label="Workflow routes">
+          {tabs.map((tab) => (
+            <Tabs.Tab key={tab.id} id={tab.id}>
+              {tab.label}
+              <Tabs.Indicator />
+            </Tabs.Tab>
+          ))}
+        </Tabs.List>
+      </Tabs.ListContainer>
       {tabs.map((tab) => (
-        <SquircleSurface key={tab.to} asChild radius="xl" smooth="lg">
-          <NavLink
-            to={tab.to}
-            className={({ isActive }) =>
-              cn(
-                "px-4 py-2 text-sm font-medium transition-colors duration-200",
-                isActive
-                  ? "bg-accent-primary text-on-primary"
-                  : "bg-surface text-ink-soft hover:bg-surface-alt hover:text-accent-primary",
-              )
-            }
-            role="tab"
-          >
-            {tab.label}
-          </NavLink>
-        </SquircleSurface>
+        <Tabs.Panel key={tab.id} id={tab.id} className="sr-only">
+          {tab.label} route panel
+        </Tabs.Panel>
       ))}
-    </div>
+    </Tabs>
   );
 }

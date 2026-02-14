@@ -30,11 +30,11 @@ export function SizePresetSelect({
       id={id}
       label={label}
       value={value}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={onChange}
       options={options}
       helperText={helperText}
       error={error}
-      disabled={disabled}
+      isDisabled={disabled}
     />
   );
 }

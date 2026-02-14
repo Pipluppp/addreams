@@ -1,6 +1,5 @@
 import type { StepStatus } from "../../lib/stepper";
 import { cn } from "../../lib/cn";
-import { SquircleSurface } from "../atoms/SquircleSurface";
 
 type ProgressStep = {
   id: string;
@@ -43,14 +42,14 @@ export function ProgressStepper({
 
   return (
     <div className="space-y-3">
-      <SquircleSurface radius="xxl" smooth="xl" className="hidden bg-surface-alt p-1 sm:block">
+      <div className="hidden rounded-2xl bg-surface-alt p-1 sm:block">
         <div className="h-2 overflow-hidden bg-surface">
           <div
             className="h-full bg-accent-primary transition-[width] duration-300"
             style={{ width: progress }}
           />
         </div>
-      </SquircleSurface>
+      </div>
 
       <ol className="flex flex-col gap-2 md:flex-row md:gap-3" aria-label="Workflow steps">
         {steps.map((step, index) => {
@@ -62,43 +61,39 @@ export function ProgressStepper({
 
           return (
             <li key={step.id} className="relative md:flex-1">
-              <SquircleSurface asChild radius="xl" smooth="lg">
-                <button
-                  type="button"
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left",
+                  STEP_CARD_TONE[status],
+                  isCurrent &&
+                    "shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-accent-primary)_35%,transparent)]",
+                  !isClickable && "cursor-not-allowed opacity-80",
+                )}
+                onClick={() => {
+                  if (isClickable) {
+                    onStepSelect(index);
+                  }
+                }}
+                aria-current={isCurrent ? "step" : undefined}
+                aria-disabled={!isClickable}
+              >
+                <div
                   className={cn(
-                    "flex w-full items-center gap-3 px-4 py-3 text-left",
-                    STEP_CARD_TONE[status],
-                    isCurrent &&
-                      "shadow-[0_0_0_1px_color-mix(in_srgb,var(--color-accent-primary)_35%,transparent)]",
-                    !isClickable && "cursor-not-allowed opacity-80",
+                    "inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg px-2 text-[10px]",
+                    "accent-type uppercase tracking-[0.15em]",
+                    STEP_BADGE_TONE[status],
                   )}
-                  onClick={() => {
-                    if (isClickable) {
-                      onStepSelect(index);
-                    }
-                  }}
-                  aria-current={isCurrent ? "step" : undefined}
-                  aria-disabled={!isClickable}
                 >
-                  <SquircleSurface
-                    radius="lg"
-                    smooth="md"
-                    className={cn(
-                      "inline-flex min-h-8 min-w-8 items-center justify-center px-2 text-[10px]",
-                      "accent-type uppercase tracking-[0.15em]",
-                      STEP_BADGE_TONE[status],
-                    )}
-                  >
-                    {index + 1}
-                  </SquircleSurface>
-                  <div className="min-w-0">
-                    <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                      Step {index + 1}
-                    </p>
-                    <p className="line-clamp-1 text-sm font-medium text-ink">{step.label}</p>
-                  </div>
-                </button>
-              </SquircleSurface>
+                  {index + 1}
+                </div>
+                <div className="min-w-0">
+                  <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    Step {index + 1}
+                  </p>
+                  <p className="line-clamp-1 text-sm font-medium text-ink">{step.label}</p>
+                </div>
+              </button>
 
               {index < steps.length - 1 ? (
                 <>
