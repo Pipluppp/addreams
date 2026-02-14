@@ -1,4 +1,5 @@
 import type { AdGraphicsSuccessRecord } from "../../features/ad-graphics/state";
+import { getWorkflowOutputImages } from "../../lib/api";
 import { FrameCanvas } from "../atoms/FrameCanvas";
 import { ResultMetadataChips } from "../molecules/ResultMetadataChips";
 
@@ -39,9 +40,28 @@ export function EditedImageResultFrame({
     );
   }
 
+  const generatedImages = getWorkflowOutputImages(successRecord.response);
+
   return (
     <div className="space-y-4 bg-surface p-4">
-      <FrameCanvas label="Stub backend accepted request. Edited preview will appear after backend hookup." />
+      {generatedImages.length ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {generatedImages.map((image, index) => (
+            <img
+              key={`${image.url}-${index}`}
+              src={image.url}
+              alt={`Edited output ${index + 1}`}
+              width={1400}
+              height={1400}
+              loading="lazy"
+              decoding="async"
+              className="h-auto max-h-72 w-full rounded-xl bg-canvas object-contain"
+            />
+          ))}
+        </div>
+      ) : (
+        <FrameCanvas label="Generation completed but no images were returned." />
+      )}
       <ResultMetadataChips response={successRecord.response} />
       <div className="bg-canvas p-3 text-xs text-muted">
         Validation summary: reference image present, instruction prompt present, and `n` forced to

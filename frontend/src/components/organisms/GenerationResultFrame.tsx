@@ -1,4 +1,5 @@
 import type { ProductShootsSuccessRecord } from "../../features/product-shoots/state";
+import { getWorkflowOutputImages } from "../../lib/api";
 import { FrameCanvas } from "../atoms/FrameCanvas";
 import { ResultMetadataChips } from "../molecules/ResultMetadataChips";
 
@@ -39,9 +40,23 @@ export function GenerationResultFrame({
     );
   }
 
+  const firstImage = getWorkflowOutputImages(successRecord.response)[0];
+
   return (
     <div className="space-y-4 bg-surface p-4">
-      <FrameCanvas label="Stub backend accepted request. Image preview will appear after backend integration." />
+      {firstImage ? (
+        <img
+          src={firstImage.url}
+          alt="Generated product shoot output"
+          width={1400}
+          height={1400}
+          loading="lazy"
+          decoding="async"
+          className="h-auto max-h-[26rem] w-full rounded-xl bg-canvas object-contain"
+        />
+      ) : (
+        <FrameCanvas label="Generation completed but no images were returned." />
+      )}
       <ResultMetadataChips response={successRecord.response} />
       <pre className="overflow-auto bg-canvas p-3 text-xs text-muted">
         {JSON.stringify(successRecord.payload.parameters, null, 2)}

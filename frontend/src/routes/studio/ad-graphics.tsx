@@ -29,6 +29,7 @@ import {
 } from "../../features/ad-graphics/schema";
 import { focusFirstError } from "../../lib/focus-first-error";
 import { validateReferenceImageFile } from "../../lib/image-validation";
+import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 
 const AD_STEPS = [
@@ -166,6 +167,9 @@ export default function AdGraphicsRoute() {
   }
 
   function renderStepContent() {
+    const generatedImages = lastSuccess ? getWorkflowOutputImages(lastSuccess.response) : [];
+    const isCompleted = lastSuccess ? isWorkflowCompletedResponse(lastSuccess.response) : false;
+
     if (boundedStep === 0) {
       return (
         <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
@@ -379,10 +383,41 @@ export default function AdGraphicsRoute() {
         successContent={
           <Frame className="space-y-4 p-4 sm:p-5">
             <p className="text-sm text-ink-soft">
-              Request accepted by workflow stub. Edited image output appears after backend image
-              generation is connected.
+              {isCompleted
+                ? "Generation completed. Edited output image variants are shown below."
+                : "Request accepted by workflow. Edited image previews appear when generated output is returned."}
             </p>
             {lastSuccess ? <ResultMetadataChips response={lastSuccess.response} /> : null}
+            {generatedImages.length ? (
+              <div className="space-y-3">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  Generated Images
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {generatedImages.map((image, index) => (
+                    <div key={`${image.url}-${index}`} className="space-y-2">
+                      <img
+                        src={image.url}
+                        alt={`Edited output ${index + 1}`}
+                        width={1400}
+                        height={1400}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-auto max-h-72 w-full rounded-xl bg-surface-alt object-contain"
+                      />
+                      <a
+                        href={image.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex text-xs font-medium text-ink hover:text-ink-soft"
+                      >
+                        Open image {index + 1}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {lastSuccess ? (
               <pre className="max-h-72 overflow-auto bg-surface-alt p-3 text-xs text-ink-soft">
                 {JSON.stringify(

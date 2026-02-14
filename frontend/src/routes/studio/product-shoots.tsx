@@ -19,6 +19,7 @@ import {
 } from "../../features/product-shoots/state";
 import { useProductShootsMutation } from "../../features/product-shoots/use-product-shoots-mutation";
 import { focusFirstError } from "../../lib/focus-first-error";
+import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 import {
   validateProductShootsForm,
@@ -132,6 +133,10 @@ export default function ProductShootsRoute() {
   }
 
   function renderStepContent() {
+    const generatedImages = lastSuccess ? getWorkflowOutputImages(lastSuccess.response) : [];
+    const firstGeneratedImageUrl = generatedImages[0]?.url;
+    const isCompleted = lastSuccess ? isWorkflowCompletedResponse(lastSuccess.response) : false;
+
     if (boundedStep === 0) {
       return (
         <Frame className="space-y-4 bg-surface-alt p-5 sm:p-6">
@@ -236,10 +241,35 @@ export default function ProductShootsRoute() {
         successContent={
           <Frame className="space-y-4 p-4 sm:p-5">
             <p className="text-sm text-ink-soft">
-              Request accepted by workflow stub. Result preview will appear after backend image
-              generation is connected.
+              {isCompleted
+                ? "Generation completed. Review the returned image below and iterate from controls if needed."
+                : "Request accepted by workflow. Image preview appears when the backend returns generated output."}
             </p>
             {lastSuccess ? <ResultMetadataChips response={lastSuccess.response} /> : null}
+            {firstGeneratedImageUrl ? (
+              <div className="space-y-2">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  Generated Image
+                </p>
+                <img
+                  src={firstGeneratedImageUrl}
+                  alt="Generated ad graphic"
+                  width={1400}
+                  height={1400}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-auto max-h-[26rem] w-full rounded-xl bg-surface-alt object-contain"
+                />
+                <a
+                  href={firstGeneratedImageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex text-xs font-medium text-ink hover:text-ink-soft"
+                >
+                  Open full image URL
+                </a>
+              </div>
+            ) : null}
             {lastSuccess ? (
               <pre className="max-h-72 overflow-auto bg-surface-alt p-3 text-xs text-ink-soft">
                 {JSON.stringify(lastSuccess.payload.parameters, null, 2)}

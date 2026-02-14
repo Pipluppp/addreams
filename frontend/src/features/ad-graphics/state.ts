@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import type { AdGraphicsRequest, WorkflowStubResponse } from "../../lib/api";
+import type { AdGraphicsRequest, WorkflowResponse } from "../../lib/api";
 import type { AdGraphicsFormValues } from "./schema";
 
 export const defaultAdGraphicsValues: AdGraphicsFormValues = {
@@ -65,7 +65,7 @@ export const adGraphicsStepAtom = atomWithStorage<number>("addreams:ad-graphics:
 
 export type AdGraphicsSuccessRecord = {
   payload: AdGraphicsRequest;
-  response: WorkflowStubResponse;
+  response: WorkflowResponse;
 };
 
 export const adGraphicsLastSuccessAtom = atom<AdGraphicsSuccessRecord | null>(null);

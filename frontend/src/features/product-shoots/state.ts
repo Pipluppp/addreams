@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import type { ProductShootsRequest, WorkflowStubResponse } from "../../lib/api";
+import type { ProductShootsRequest, WorkflowResponse } from "../../lib/api";
 import type { ProductShootsFormValues } from "./schema";
 
 export const defaultProductShootsValues: ProductShootsFormValues = {
@@ -22,7 +22,7 @@ export const productShootsStepAtom = atomWithStorage<number>("addreams:product-s
 
 export type ProductShootsSuccessRecord = {
   payload: ProductShootsRequest;
-  response: WorkflowStubResponse;
+  response: WorkflowResponse;
 };
 
 export const productShootsLastSuccessAtom = atom<ProductShootsSuccessRecord | null>(null);

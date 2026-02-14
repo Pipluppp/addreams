@@ -56,12 +56,49 @@ export type AdGraphicsRequest = {
   parameters: AdGraphicsParameters;
 };
 
-export type WorkflowStubResponse = {
+export type WorkflowOutputImage = {
+  url: string;
+};
+
+export type WorkflowSuccessResponse = {
+  workflow: "image-from-text" | "image-from-reference";
+  status: "completed";
+  requestId: string;
+  provider: {
+    name: "qwen";
+    requestId?: string;
+    model: string;
+  };
+  output: {
+    images: WorkflowOutputImage[];
+    expiresInHours: number;
+  };
+  usage?: {
+    imageCount?: number;
+    width?: number;
+    height?: number;
+  };
+};
+
+export type WorkflowLegacyStubResponse = {
   workflow: "image-from-text" | "image-from-reference" | "video-from-reference";
   status: "stub";
   requestId: string;
-  receivedAt: string;
+  receivedAt?: string;
 };
+
+export type WorkflowResponse = WorkflowSuccessResponse | WorkflowLegacyStubResponse;
+
+export function isWorkflowCompletedResponse(
+  response: WorkflowResponse,
+): response is WorkflowSuccessResponse {
+  return response.status === "completed";
+}
+
+export function getWorkflowOutputImages(response: WorkflowResponse): WorkflowOutputImage[] {
+  if (!isWorkflowCompletedResponse(response)) return [];
+  return response.output.images;
+}
 
 export type HealthResponse = {
   status: string;
@@ -70,9 +107,17 @@ export type HealthResponse = {
 };
 
 type HonoErrorPayload = {
-  error?: string;
+  error?:
+    | string
+    | {
+        code?: string;
+        message?: string;
+        providerCode?: string;
+        providerRequestId?: string;
+      };
   detail?: string;
   message?: string;
+  requestId?: string;
 };
 
 export class ApiError extends Error {
@@ -96,7 +141,32 @@ function isObject(value: unknown): value is Record<string, unknown> {
 function normalizeError(status: number, payload: unknown): ApiError {
   if (isObject(payload)) {
     const data = payload as HonoErrorPayload;
-    const message = data.error || data.message || `Request failed with ${status}`;
+    if (typeof data.error === "string") {
+      return new ApiError(data.error, status, data.detail);
+    }
+
+    if (isObject(data.error)) {
+      const message =
+        (typeof data.error.message === "string" ? data.error.message : undefined) ??
+        data.message ??
+        `Request failed with ${status}`;
+      const details = [
+        typeof data.error.code === "string" ? `code=${data.error.code}` : null,
+        typeof data.error.providerCode === "string"
+          ? `providerCode=${data.error.providerCode}`
+          : null,
+        typeof data.error.providerRequestId === "string"
+          ? `providerRequestId=${data.error.providerRequestId}`
+          : null,
+        typeof data.requestId === "string" ? `requestId=${data.requestId}` : null,
+      ]
+        .filter(Boolean)
+        .join(" ");
+
+      return new ApiError(message, status, details || data.detail);
+    }
+
+    const message = data.message || `Request failed with ${status}`;
     return new ApiError(message, status, data.detail);
   }
 
@@ -141,7 +211,7 @@ export function createApiClient(baseUrl: string) {
   return {
     health: () => requestJson<HealthResponse>(baseUrl, "/health"),
     submitProductShoots: (payload: ProductShootsRequest) =>
-      requestJson<WorkflowStubResponse, ProductShootsRequest>(
+      requestJson<WorkflowResponse, ProductShootsRequest>(
         baseUrl,
         "/workflows/image-from-text",
         {
@@ -150,7 +220,7 @@ export function createApiClient(baseUrl: string) {
         },
       ),
     submitAdGraphics: (payload: AdGraphicsRequest) =>
-      requestJson<WorkflowStubResponse, AdGraphicsRequest>(
+      requestJson<WorkflowResponse, AdGraphicsRequest>(
         baseUrl,
         "/workflows/image-from-reference",
         {
