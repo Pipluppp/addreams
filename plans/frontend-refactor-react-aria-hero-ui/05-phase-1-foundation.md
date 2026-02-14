@@ -1,36 +1,14 @@
 # Phase 1: Foundation
 
-Install HeroUI v3, configure Tailwind integration, set up CSS corner-shape, and map the design system tokens. This phase is non-breaking — it adds the new system alongside the existing one.
+Integrate HeroUI styles into CSS, set up CSS corner-shape, and map the design system tokens. This phase is non-breaking — it adds the new system alongside the existing one.
 
-**Prerequisite:** None
+**Prerequisite:** HeroUI packages are already installed in this branch (`@heroui/react`, `@heroui/styles`)
 **Output:** HeroUI available for use, CSS corner-shape active, design tokens mapped
 **Breaking changes:** None
 
 ---
 
-## Step 1.1: Install HeroUI v3
-
-```bash
-cd frontend
-npm install @heroui/styles@beta @heroui/react@beta
-```
-
-This installs:
-- `@heroui/react` — component library
-- `@heroui/styles` — required style/theme layer import
-- `react-aria-components` — React Aria primitives (transitive dependency)
-
-### Verify compatibility
-
-After install, verify no peer dependency conflicts:
-- React 19 — HeroUI v3 supports React 19
-- Tailwind v4 — HeroUI v3 targets Tailwind v4
-
-Run `npm run typecheck` to confirm no type conflicts.
-
----
-
-## Step 1.2: Import HeroUI Styles in CSS
+## Step 1.1: Import HeroUI Styles in CSS
 
 Add HeroUI styles immediately after Tailwind in `frontend/src/index.css`:
 
@@ -55,11 +33,11 @@ Run `npm run dev`, confirm the button renders. Then delete the test.
 
 ---
 
-## Step 1.3: Set up CSS corner-shape
+## Step 1.2: Set up CSS corner-shape
 
 Edit `frontend/src/index.css`:
 
-### 1.3a: Add radius tokens (replace squircle JS tokens)
+### 1.2a: Add radius tokens (replace squircle JS tokens)
 
 ```css
 @theme {
@@ -84,7 +62,7 @@ Edit `frontend/src/index.css`:
 }
 ```
 
-### 1.3b: Add global corner-shape rule
+### 1.2b: Add global corner-shape rule
 
 ```css
 @layer base {
@@ -102,13 +80,13 @@ Edit `frontend/src/index.css`:
 
 This single rule means: **any element with `border-radius` set will automatically get squircle corners** in supporting browsers. No per-component work.
 
-### 1.3c: Verify
+### 1.2c: Verify
 
 Open the app in Chrome 139+. Elements with `border-radius` should now show smooth squircle corners. Open in Firefox — should show standard rounded corners (graceful fallback).
 
 ---
 
-## Step 1.4: Map design tokens to HeroUI semantic variables
+## Step 1.3: Map design tokens to HeroUI semantic variables
 
 Add HeroUI semantic variable overrides to `index.css` using canonical names from HeroUI docs (`--background`, `--accent`, `--surface`, `--field-*`, etc.).
 
@@ -162,7 +140,7 @@ import { Button } from "@heroui/react";
 
 ---
 
-## Step 1.5: Add BEM class overrides
+## Step 1.4: Add BEM class overrides
 
 Add component-level style overrides to `index.css` to match current visual design. See `02-design-system-migration.md` for the full list.
 
@@ -269,7 +247,7 @@ Start with the components you'll migrate first:
 
 ---
 
-## Step 1.6: Verify end-to-end
+## Step 1.5: Verify end-to-end
 
 After all foundation work:
 
@@ -284,7 +262,7 @@ After all foundation work:
 
 ## Deliverables
 
-- [x] `@heroui/react` and `@heroui/styles` installed
+- [x] HeroUI dependencies already installed (`@heroui/react`, `@heroui/styles`)
 - [x] `@import "@heroui/styles"` added after Tailwind import in `index.css`
 - [x] `--radius-*` tokens added to `@theme`
 - [x] Global `corner-shape: squircle` rule added under `@supports`

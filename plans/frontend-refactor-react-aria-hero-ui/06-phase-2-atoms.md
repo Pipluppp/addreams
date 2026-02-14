@@ -2,7 +2,7 @@
 
 Replace each atom component with its HeroUI equivalent. Each atom is a self-contained PR. The barrel exports in `components/ui/` ensure consumers don't break.
 
-**Prerequisite:** Phase 1 complete (HeroUI installed, tokens mapped, BEM overrides in place)
+**Prerequisite:** Phase 1 complete (styles imported, tokens mapped, BEM overrides in place)
 **Strategy:** Swap one atom at a time. Update the barrel export. Run typecheck + visual verify.
 
 ---

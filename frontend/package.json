@@ -14,6 +14,8 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
+    "@heroui/react": "^3.0.0-beta.6",
+    "@heroui/styles": "^3.0.0-beta.6",
     "@squircle-js/react": "^1.3.0",
     "@tanstack/react-query": "^5.90.21",
     "bunshi": "^2.2.0",

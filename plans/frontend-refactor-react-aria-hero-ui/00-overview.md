@@ -20,7 +20,7 @@ Migrate the addreams frontend from hand-rolled custom components to **HeroUI v3*
 | [`02-design-system-migration.md`](./02-design-system-migration.md) | Mapping current design tokens to HeroUI theming, CSS corner-shape setup, BEM overrides |
 | [`03-easy-refactorings.md`](./03-easy-refactorings.md) | Simple 1:1 component swaps that can be done quickly with minimal risk |
 | [`04-complex-refactorings.md`](./04-complex-refactorings.md) | Components requiring structural changes, custom compositions, or HeroUI pattern adaptation |
-| [`05-phase-1-foundation.md`](./05-phase-1-foundation.md) | Install HeroUI, configure Tailwind, set up CSS corner-shape, map design tokens |
+| [`05-phase-1-foundation.md`](./05-phase-1-foundation.md) | Foundation CSS integration: HeroUI styles import, corner-shape setup, semantic token mapping, BEM overrides |
 | [`06-phase-2-atoms.md`](./06-phase-2-atoms.md) | Replace each atom component with HeroUI equivalent |
 | [`07-phase-3-molecules.md`](./07-phase-3-molecules.md) | Update molecules to compose HeroUI primitives |
 | [`08-phase-4-organisms.md`](./08-phase-4-organisms.md) | Adopt HeroUI patterns in organisms and layouts |
