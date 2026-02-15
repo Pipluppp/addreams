@@ -1,46 +1,34 @@
-import { Tabs } from "@heroui/react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import { cn } from "../../lib/cn";
 
 type WorkflowTabsProps = {
   className?: string;
 };
 
 const tabs = [
-  { id: "/product-shoots", label: "Product Shoots" },
-  { id: "/ad-graphics", label: "Ad Graphics" },
+  { to: "/product-shoots", label: "Product Shoots" },
+  { to: "/ad-graphics", label: "Ad Graphics" },
 ];
 const DEFAULT_WORKFLOW_TAB = "/product-shoots";
 
 export function WorkflowTabs({ className }: WorkflowTabsProps) {
-  const navigate = useNavigate();
   const location = useLocation();
 
-  const selectedKey =
-    tabs.find((tab) => location.pathname.startsWith(tab.id))?.id ?? DEFAULT_WORKFLOW_TAB;
+  const activePath =
+    tabs.find((tab) => location.pathname.startsWith(tab.to))?.to ?? DEFAULT_WORKFLOW_TAB;
 
   return (
-    <Tabs
-      selectedKey={selectedKey}
-      onSelectionChange={(key) => navigate(String(key))}
-      className={className}
-      aria-label="Workflow routes"
-      hideSeparator
-    >
-      <Tabs.ListContainer>
-        <Tabs.List aria-label="Workflow routes">
-          {tabs.map((tab) => (
-            <Tabs.Tab key={tab.id} id={tab.id}>
-              {tab.label}
-              <Tabs.Indicator />
-            </Tabs.Tab>
-          ))}
-        </Tabs.List>
-      </Tabs.ListContainer>
+    <nav className={cn("grid gap-2 sm:grid-cols-2", className)} aria-label="Workflow routes">
       {tabs.map((tab) => (
-        <Tabs.Panel key={tab.id} id={tab.id} className="sr-only">
-          {tab.label} route panel
-        </Tabs.Panel>
+        <NavLink
+          key={tab.to}
+          to={tab.to}
+          className="tabs__tab text-center"
+          aria-current={activePath === tab.to ? "page" : undefined}
+        >
+          {tab.label}
+        </NavLink>
       ))}
-    </Tabs>
+    </nav>
   );
 }

@@ -17,6 +17,8 @@
   --color-canvas: #f9f5f0;
   --color-surface: #ffffff;
   --color-surface-alt: #f5f1ea;
+  --color-canvas-gradient-top: #fcfaf6;
+  --color-canvas-gradient-bottom: #f6f2ec;
 
   --color-ink: #171717;
   --color-ink-soft: #4b4b4b;
@@ -125,7 +127,12 @@
       "wght" 430,
       "wdth" 100,
       "opsz" 14;
-    background-image: linear-gradient(180deg, #fcfaf6 0%, var(--color-canvas) 48%, #f6f2ec 100%);
+    background-image: linear-gradient(
+      180deg,
+      var(--color-canvas-gradient-top) 0%,
+      var(--color-canvas) 48%,
+      var(--color-canvas-gradient-bottom) 100%
+    );
   }
 
   img {
@@ -257,11 +264,12 @@
   }
 
   .tabs__tab[data-selected="true"],
-  .tabs__tab[aria-selected="true"] {
+  .tabs__tab[aria-selected="true"],
+  .tabs__tab[aria-current="page"] {
     @apply bg-accent-primary text-on-primary;
   }
 
-  .tabs__tab:not([data-selected="true"]):not([aria-selected="true"]) {
+  .tabs__tab:not([data-selected="true"]):not([aria-selected="true"]):not([aria-current="page"]) {
     @apply bg-surface text-ink-soft hover:bg-surface-alt hover:text-accent-primary;
   }
 

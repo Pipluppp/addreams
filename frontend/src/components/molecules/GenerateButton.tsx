@@ -9,7 +9,7 @@ type GenerateButtonProps = {
 
 export function GenerateButton({
   label = "Generate",
-  pendingLabel = "Generating...",
+  pendingLabel = "Generating…",
   isPending,
   disabled,
 }: GenerateButtonProps) {

@@ -168,20 +168,21 @@ export function AdGraphicsPanel({
                 label="Custom width"
                 value={values.customWidth}
                 onChange={(event) => onChange({ ...values, customWidth: event.target.value })}
+                type="number"
                 inputMode="numeric"
                 placeholder="1024"
+                error={errors.customSize}
               />
               <TextField
                 id="custom-size-height"
                 label="Custom height"
                 value={values.customHeight}
                 onChange={(event) => onChange({ ...values, customHeight: event.target.value })}
+                type="number"
                 inputMode="numeric"
                 placeholder="1024"
+                error={errors.customSize}
               />
-              {errors.customSize ? (
-                <p className="text-xs text-error sm:col-span-2">{errors.customSize}</p>
-              ) : null}
             </div>
           )}
         </div>
@@ -209,10 +210,19 @@ export function AdGraphicsPanel({
       <div className="flex flex-wrap gap-3">
         <GenerateButton
           label="Generate Ad Graphic"
-          pendingLabel="Generating Ad Graphic..."
+          pendingLabel="Generating Ad Graphic…"
           isPending={isPending}
         />
-        <Button type="button" variant="ghost" onPress={onClearForm}>
+        <Button
+          type="button"
+          variant="ghost"
+          onPress={() => {
+            if (!window.confirm("Clear all form fields?")) {
+              return;
+            }
+            onClearForm();
+          }}
+        >
           Clear form
         </Button>
       </div>

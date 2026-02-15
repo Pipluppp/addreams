@@ -14,6 +14,7 @@ export function SeedInput({ id, value, onChange, error }: SeedInputProps) {
       label="Seed"
       value={value}
       onChange={(event) => onChange(event.target.value)}
+      type="number"
       placeholder="Optional deterministic seed"
       inputMode="numeric"
       error={error}

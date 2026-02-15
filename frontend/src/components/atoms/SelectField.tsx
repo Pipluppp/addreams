@@ -58,7 +58,7 @@ export function SelectField({
       className={cn("select", className)}
     >
       <Label>{label}</Label>
-      <Select.Trigger className="select__trigger">
+      <Select.Trigger id={id} className="select__trigger">
         <Select.Value />
         <Select.Indicator />
       </Select.Trigger>

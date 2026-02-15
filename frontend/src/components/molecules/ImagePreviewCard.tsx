@@ -25,7 +25,17 @@ export function ImagePreviewCard({ src, alt, onSwap, onClear }: ImagePreviewCard
         <Button type="button" variant="ghost" onPress={onSwap} className="px-3 py-1 text-xs">
           Swap image
         </Button>
-        <Button type="button" variant="ghost" onPress={onClear} className="px-3 py-1 text-xs">
+        <Button
+          type="button"
+          variant="ghost"
+          onPress={() => {
+            if (!window.confirm("Remove this image from the draft?")) {
+              return;
+            }
+            onClear();
+          }}
+          className="px-3 py-1 text-xs"
+        >
           Clear
         </Button>
       </div>

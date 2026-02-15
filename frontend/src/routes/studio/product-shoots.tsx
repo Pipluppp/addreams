@@ -221,7 +221,7 @@ export default function ProductShootsRoute() {
         error={submitError}
         isEmpty={!lastSuccess}
         emptyLabel="No generation yet. Complete controls and generate your first ad graphic."
-        loadingLabel="Generating ad graphic..."
+        loadingLabel="Generating ad graphic…"
         onIterate={() => setCurrentStep(2)}
         iterateLabel="Back to Controls"
         successContent={
@@ -266,6 +266,9 @@ export default function ProductShootsRoute() {
                 type="button"
                 variant="ghost"
                 onPress={() => {
+                  if (!window.confirm("Discard this product shoot draft?")) {
+                    return;
+                  }
                   setFormValues(defaultProductShootsValues);
                   setErrors({});
                   setSubmitError(null);
@@ -313,7 +316,7 @@ export default function ProductShootsRoute() {
         primaryActionLabel={
           boundedStep < 2 ? "Continue" : boundedStep === 2 ? "Generate" : "Back to Controls"
         }
-        primaryActionPendingLabel="Generating..."
+        primaryActionPendingLabel="Generating…"
         primaryActionTone={boundedStep === 2 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
       >

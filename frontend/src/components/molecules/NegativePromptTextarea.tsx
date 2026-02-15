@@ -21,7 +21,7 @@ export function NegativePromptTextarea({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Describe what to avoid in the image..."
+        placeholder="Describe what to avoid in the image…"
         rows={4}
         maxLength={MAX_NEGATIVE_PROMPT_LENGTH}
       />

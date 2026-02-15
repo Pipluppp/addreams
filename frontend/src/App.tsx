@@ -17,19 +17,19 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<AppShellLayout />}>
-          <Route index element={withSuspense(<HomeRoute />, "Loading homepage...")} />
+          <Route index element={withSuspense(<HomeRoute />, "Loading homepage…")} />
           <Route
             path="product-shoots"
-            element={withSuspense(<AdGraphicsRoute />, "Loading Product Shoots...")}
+            element={withSuspense(<AdGraphicsRoute />, "Loading Product Shoots…")}
           />
           <Route
             path="ad-graphics"
-            element={withSuspense(<ProductShootsRoute />, "Loading Ad Graphics...")}
+            element={withSuspense(<ProductShootsRoute />, "Loading Ad Graphics…")}
           />
           <Route path="studio" element={<Navigate to="/product-shoots" replace />} />
           <Route path="studio/product-shoots" element={<Navigate to="/product-shoots" replace />} />
           <Route path="studio/ad-graphics" element={<Navigate to="/ad-graphics" replace />} />
-          <Route path="*" element={withSuspense(<NotFoundRoute />, "Loading page...")} />
+          <Route path="*" element={withSuspense(<NotFoundRoute />, "Loading page…")} />
         </Route>
       </Routes>
     </BrowserRouter>

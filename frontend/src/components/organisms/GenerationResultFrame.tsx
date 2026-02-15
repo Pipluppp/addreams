@@ -17,7 +17,7 @@ export function GenerationResultFrame({
   if (isPending) {
     return (
       <div aria-live="polite">
-        <FrameCanvas label="Composing your product shoot output..." />
+        <FrameCanvas label="Composing your product shoot output…" />
       </div>
     );
   }

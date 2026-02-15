@@ -318,8 +318,10 @@ export default function AdGraphicsRoute() {
                   onChange={(event) =>
                     setFormValues({ ...formValues, customWidth: event.target.value })
                   }
+                  type="number"
                   inputMode="numeric"
                   placeholder="1024"
+                  error={errors.customSize}
                 />
                 <TextField
                   id="custom-size-height"
@@ -328,12 +330,11 @@ export default function AdGraphicsRoute() {
                   onChange={(event) =>
                     setFormValues({ ...formValues, customHeight: event.target.value })
                   }
+                  type="number"
                   inputMode="numeric"
                   placeholder="1024"
+                  error={errors.customSize}
                 />
-                {errors.customSize ? (
-                  <p className="text-xs text-error sm:col-span-2">{errors.customSize}</p>
-                ) : null}
               </div>
             )}
           </div>
@@ -358,7 +359,7 @@ export default function AdGraphicsRoute() {
         error={submitError}
         isEmpty={!lastSuccess}
         emptyLabel="No product shoot results yet. Complete controls and run generate."
-        loadingLabel="Generating product shoot..."
+        loadingLabel="Generating ad graphic…"
         onIterate={() => setCurrentStep(2)}
         iterateLabel="Back to Controls"
         successContent={
@@ -405,7 +406,7 @@ export default function AdGraphicsRoute() {
                   {
                     referenceImageSource:
                       lastSuccess.payload.referenceImageUrl.slice(0, 80) +
-                      (lastSuccess.payload.referenceImageUrl.length > 80 ? "..." : ""),
+                      (lastSuccess.payload.referenceImageUrl.length > 80 ? "…" : ""),
                     parameters: lastSuccess.payload.parameters,
                   },
                   null,
@@ -417,6 +418,9 @@ export default function AdGraphicsRoute() {
               type="button"
               variant="ghost"
               onPress={() => {
+                if (!window.confirm("Discard this ad graphic draft?")) {
+                  return;
+                }
                 setFormValues(defaultAdGraphicsValues);
                 setErrors({});
                 setSubmitError(null);
@@ -463,7 +467,7 @@ export default function AdGraphicsRoute() {
         primaryActionLabel={
           boundedStep < 2 ? "Continue" : boundedStep === 2 ? "Generate" : "Back to Controls"
         }
-        primaryActionPendingLabel="Generating..."
+        primaryActionPendingLabel="Generating…"
         primaryActionTone={boundedStep === 2 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
       >

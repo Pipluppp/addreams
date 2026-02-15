@@ -104,7 +104,7 @@ export function ProductShootsForm({
       <div className="flex flex-wrap gap-3">
         <GenerateButton
           label="Generate Product Shoot"
-          pendingLabel="Generating Product Shoot..."
+          pendingLabel="Generating Product Shoot…"
           isPending={isPending}
         />
         {canReuseSettings ? (

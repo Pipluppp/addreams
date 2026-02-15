@@ -17,7 +17,7 @@ export function EditedImageResultFrame({
   if (isPending) {
     return (
       <div aria-live="polite">
-        <FrameCanvas label="Applying edit instructions to your reference image..." />
+        <FrameCanvas label="Applying edit instructions to your reference image…" />
       </div>
     );
   }
@@ -72,7 +72,7 @@ export function EditedImageResultFrame({
           {
             referenceImageSource:
               successRecord.payload.referenceImageUrl.slice(0, 64) +
-              (successRecord.payload.referenceImageUrl.length > 64 ? "..." : ""),
+              (successRecord.payload.referenceImageUrl.length > 64 ? "…" : ""),
             parameters: successRecord.payload.parameters,
           },
           null,

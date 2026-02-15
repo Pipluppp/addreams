@@ -29,7 +29,7 @@ export function PromptTextarea({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Describe the product scene, style, and composition..."
+        placeholder="Describe the product scene, style, and composition…"
         rows={5}
         maxLength={MAX_PROMPT_LENGTH}
       />

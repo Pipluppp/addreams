@@ -31,6 +31,8 @@ export function AppShellLayout() {
                 src="/brand/logo.svg"
                 alt=""
                 aria-hidden="true"
+                width={28}
+                height={28}
                 className="h-[1.08em] w-[1.08em] shrink-0"
               />
               <span>addreams</span>
@@ -116,25 +118,25 @@ export function AppShellLayout() {
           </div>
         </section>
 
-        <section className="bg-[#08090c] text-[#f1f1f1]">
+        <section className="bg-ink text-surface">
           <div className="container-shell grid gap-9 py-12 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr]">
             <div className="space-y-4">
-              <p className="section-title text-[1.5rem] text-white">addreams</p>
-              <p className="text-sm text-white/70">
+              <p className="section-title text-[1.5rem] text-surface">addreams</p>
+              <p className="text-sm text-surface/70">
                 Creative workflows for Product Shoots and Ad Graphics.
               </p>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-white">Workflows</h3>
-              <ul className="space-y-2 text-sm text-white/75">
+              <h3 className="text-sm font-semibold text-surface">Workflows</h3>
+              <ul className="space-y-2 text-sm text-surface/75">
                 <li>
-                  <NavLink to="/product-shoots" className="hover:text-white">
+                  <NavLink to="/product-shoots" className="hover:text-surface">
                     Product Shoots
                   </NavLink>
                 </li>
                 <li>
-                  <NavLink to="/ad-graphics" className="hover:text-white">
+                  <NavLink to="/ad-graphics" className="hover:text-surface">
                     Ad Graphics
                   </NavLink>
                 </li>
@@ -142,54 +144,40 @@ export function AppShellLayout() {
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-white">Platform</h3>
-              <ul className="space-y-2 text-sm text-white/75">
+              <h3 className="text-sm font-semibold text-surface">Platform</h3>
+              <ul className="space-y-2 text-sm text-surface/75">
                 <li>
-                  <a href="#" className="hover:text-white">
-                    API Status
-                  </a>
+                  <span>API Status</span>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Documentation
-                  </a>
+                  <span>Documentation</span>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Changelog
-                  </a>
+                  <span>Changelog</span>
                 </li>
               </ul>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-white">Company</h3>
-              <ul className="space-y-2 text-sm text-white/75">
+              <h3 className="text-sm font-semibold text-surface">Company</h3>
+              <ul className="space-y-2 text-sm text-surface/75">
                 <li>
-                  <a href="#" className="hover:text-white">
-                    About
-                  </a>
+                  <span>About</span>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Contact
-                  </a>
+                  <span>Contact</span>
                 </li>
               </ul>
             </div>
 
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-white">Legal</h3>
-              <ul className="space-y-2 text-sm text-white/75">
+              <h3 className="text-sm font-semibold text-surface">Legal</h3>
+              <ul className="space-y-2 text-sm text-surface/75">
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Privacy Policy
-                  </a>
+                  <span>Privacy Policy</span>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Terms of Use
-                  </a>
+                  <span>Terms of Use</span>
                 </li>
               </ul>
             </div>
