@@ -14,8 +14,6 @@ export type AdGraphicsFormValues = {
   sizePreset: "1664*928" | "1472*1140" | "1328*1328" | "1140*1472" | "928*1664";
   customWidth: string;
   customHeight: string;
-  seed: string;
-  prompt_extend: boolean;
   watermark: boolean;
   selectedPreset: string;
 };
@@ -25,7 +23,6 @@ export type AdGraphicsField =
   | "referenceImageUrl"
   | "prompt"
   | "negative_prompt"
-  | "seed"
   | "customSize";
 
 export type AdGraphicsValidationErrors = Partial<Record<AdGraphicsField, string>>;

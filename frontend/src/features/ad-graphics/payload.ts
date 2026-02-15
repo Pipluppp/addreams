@@ -66,7 +66,7 @@ export async function buildAdGraphicsPayload(
       n: 1,
       negative_prompt: negativePrompt.length ? negativePrompt : undefined,
       size: resolveSize(values),
-      prompt_extend: values.prompt_extend,
+      prompt_extend: true,
       watermark: false,
     },
   };

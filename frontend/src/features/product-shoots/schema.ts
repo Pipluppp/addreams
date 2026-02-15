@@ -1,6 +1,6 @@
 import { MAX_NEGATIVE_PROMPT_LENGTH, MAX_PROMPT_LENGTH } from "../parameters/constants";
 
-export type ProductShootsField = "prompt" | "negative_prompt" | "size" | "seed" | "output_format";
+export type ProductShootsField = "prompt" | "negative_prompt" | "size" | "output_format";
 
 export type ProductShootsValidationErrors = Partial<Record<ProductShootsField, string>>;
 
@@ -8,8 +8,6 @@ export type ProductShootsFormValues = {
   prompt: string;
   negative_prompt: string;
   size: "1664*928" | "1472*1140" | "1328*1328" | "1140*1472" | "928*1664";
-  seed: string;
-  prompt_extend: boolean;
   watermark: boolean;
   output_format: "png" | "jpg";
 };

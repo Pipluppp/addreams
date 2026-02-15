@@ -1,9 +1,8 @@
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { Button, Card } from "@heroui/react";
+import { Button, Card, Disclosure } from "@heroui/react";
 import { NegativePromptTextarea } from "../../components/molecules/NegativePromptTextarea";
 import { OutputFormatSelect } from "../../components/molecules/OutputFormatSelect";
-import { PromptExtendToggle } from "../../components/molecules/PromptExtendToggle";
 import { PromptTextarea } from "../../components/molecules/PromptTextarea";
 import { ResultMetadataChips } from "../../components/molecules/ResultMetadataChips";
 import { SizePresetSelect } from "../../components/molecules/SizePresetSelect";
@@ -26,9 +25,7 @@ import {
 } from "../../features/product-shoots/schema";
 
 const PRODUCT_STEPS = [
-  { id: "brief", label: "Creative Brief" },
-  { id: "inputs", label: "Inputs" },
-  { id: "controls", label: "Creative Controls" },
+  { id: "compose", label: "Your Ad Graphic" },
   { id: "result", label: "Result & Iterate" },
 ] as const;
 
@@ -36,7 +33,6 @@ const PRODUCT_FIELD_IDS: Record<ProductShootsField, string> = {
   prompt: "product-prompt",
   negative_prompt: "product-negative-prompt",
   size: "product-size",
-  seed: "product-seed",
   output_format: "product-output-format",
 };
 
@@ -46,13 +42,7 @@ function validateProductStep(
   hasSuccess: boolean,
 ) {
   if (step === 0) {
-    return !errors.prompt;
-  }
-  if (step === 1) {
-    return !errors.size && !errors.output_format;
-  }
-  if (step === 2) {
-    return !errors.negative_prompt;
+    return !errors.prompt && !errors.negative_prompt && !errors.size && !errors.output_format;
   }
   return hasSuccess;
 }
@@ -63,6 +53,7 @@ export default function ProductShootsRoute() {
   const [lastSuccess, setLastSuccess] = useAtom(productShootsLastSuccessAtom);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<ProductShootsValidationErrors>({});
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const mutation = useProductShootsMutation();
 
   const boundedStep = Math.max(0, Math.min(PRODUCT_STEPS.length - 1, currentStep));
@@ -78,51 +69,20 @@ export default function ProductShootsRoute() {
   );
   const stepStatuses = deriveStepStatuses(boundedStep, stepValidity);
 
-  function setValidationErrors(nextErrors: ProductShootsValidationErrors) {
-    setErrors(nextErrors);
-  }
-
-  function focusStepError(step: number, stepErrors: ProductShootsValidationErrors) {
-    const stepFieldOrder: Record<number, ProductShootsField[]> = {
-      0: ["prompt"],
-      1: ["size", "output_format"],
-      2: ["negative_prompt"],
-      3: [],
-    };
-
-    for (const field of stepFieldOrder[step] ?? []) {
-      if (stepErrors[field]) {
-        focusFirstError(stepErrors, PRODUCT_FIELD_IDS);
-        return;
-      }
-    }
-  }
-
-  function handleContinue() {
-    if (!validateProductStep(boundedStep, validation.errors, Boolean(lastSuccess))) {
-      setValidationErrors(validation.errors);
-      focusStepError(boundedStep, validation.errors);
-      return;
-    }
-
-    setSubmitError(null);
-    setCurrentStep((step) => Math.min(step + 1, PRODUCT_STEPS.length - 1));
-  }
-
   function handleGenerate() {
     if (!validation.isValid) {
-      setValidationErrors(validation.errors);
+      setErrors(validation.errors);
       focusFirstError(validation.errors, PRODUCT_FIELD_IDS);
       return;
     }
 
-    setValidationErrors({});
+    setErrors({});
     setSubmitError(null);
 
     mutation.mutate(formValues, {
       onSuccess: (result) => {
         setLastSuccess(result);
-        setCurrentStep(3);
+        setCurrentStep(1);
       },
       onError: (error) => {
         setSubmitError(error instanceof Error ? error.message : "Request failed.");
@@ -137,7 +97,8 @@ export default function ProductShootsRoute() {
 
     if (boundedStep === 0) {
       return (
-        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
+        <Card className="space-y-5 bg-surface-alt p-5 sm:p-6">
+          {/* Prompt */}
           <div className="space-y-3 rounded-xl bg-canvas p-5">
             <PromptTextarea
               id="product-prompt"
@@ -147,69 +108,60 @@ export default function ProductShootsRoute() {
               error={errors.prompt}
             />
           </div>
-        </Card>
-      );
-    }
 
-    if (boundedStep === 1) {
-      return (
-        <Card className="grid gap-4 bg-surface-alt p-5 sm:grid-cols-2 sm:p-6">
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Canvas
-            </p>
-            <p className="text-xs text-ink-soft">
-              Select a stable aspect ratio before generation so outputs are consistent.
-            </p>
-            <SizePresetSelect
-              id="product-size"
-              value={formValues.size}
-              onChange={(next) => setFormValues({ ...formValues, size: next as typeof formValues.size })}
-              error={errors.size}
-              helperText="Use approved presets for stable generation dimensions."
-            />
+          {/* Size & Format */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-3 rounded-xl bg-canvas p-5">
+              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                Canvas
+              </p>
+              <SizePresetSelect
+                id="product-size"
+                value={formValues.size}
+                onChange={(next) =>
+                  setFormValues({ ...formValues, size: next as typeof formValues.size })
+                }
+                error={errors.size}
+              />
+            </div>
+            <div className="space-y-3 rounded-xl bg-canvas p-5">
+              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                Export
+              </p>
+              <OutputFormatSelect
+                id="product-output-format"
+                value={formValues.output_format}
+                onChange={(next) => setFormValues({ ...formValues, output_format: next })}
+                error={errors.output_format}
+              />
+            </div>
           </div>
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Export
-            </p>
-            <p className="text-xs text-ink-soft">
-              Define output type early to keep review and downstream usage predictable.
-            </p>
-            <OutputFormatSelect
-              id="product-output-format"
-              value={formValues.output_format}
-              onChange={(next) => setFormValues({ ...formValues, output_format: next })}
-              error={errors.output_format}
-            />
-          </div>
-        </Card>
-      );
-    }
 
-    if (boundedStep === 2) {
-      return (
-        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Exclusions
-            </p>
-            <NegativePromptTextarea
-              id="product-negative-prompt"
-              value={formValues.negative_prompt}
-              onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
-              error={errors.negative_prompt}
-            />
-          </div>
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Generation Option
-            </p>
-            <PromptExtendToggle
-              id="product-prompt-extend"
-              checked={formValues.prompt_extend}
-              onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
-            />
+          {/* Advanced Options */}
+          <div className="rounded-xl bg-canvas p-5">
+            <Disclosure isExpanded={advancedOpen} onExpandedChange={setAdvancedOpen}>
+              <Disclosure.Heading>
+                <Disclosure.Trigger className="flex w-full cursor-pointer items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Disclosure.Indicator />
+                    <span className="text-xs font-medium text-ink-soft">Advanced Options</span>
+                  </div>
+                  {!advancedOpen && formValues.negative_prompt.trim() ? (
+                    <span className="text-[10px] text-ink-muted">Negative prompt applied</span>
+                  ) : null}
+                </Disclosure.Trigger>
+              </Disclosure.Heading>
+              <Disclosure.Content>
+                <Disclosure.Body className="space-y-4 pt-4">
+                  <NegativePromptTextarea
+                    id="product-negative-prompt"
+                    value={formValues.negative_prompt}
+                    onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
+                    error={errors.negative_prompt}
+                  />
+                </Disclosure.Body>
+              </Disclosure.Content>
+            </Disclosure>
           </div>
         </Card>
       );
@@ -220,16 +172,16 @@ export default function ProductShootsRoute() {
         isPending={mutation.isPending}
         error={submitError}
         isEmpty={!lastSuccess}
-        emptyLabel="No generation yet. Complete controls and generate your first ad graphic."
-        loadingLabel="Generating ad graphic…"
-        onIterate={() => setCurrentStep(2)}
-        iterateLabel="Back to Controls"
+        emptyLabel="No generation yet. Complete the form and hit Generate."
+        loadingLabel="Generating ad graphic\u2026"
+        onIterate={() => setCurrentStep(0)}
+        iterateLabel="Back to Edit"
         successContent={
-          <Card className="space-y-4 p-4 sm:p-5">
+          <Card className="space-y-5 p-4 sm:p-5">
             <p className="text-sm text-ink-soft">
               {isCompleted
-                ? "Generation completed. Review the returned image below and iterate from controls if needed."
-                : "Request accepted by workflow. Image preview appears when the backend returns generated output."}
+                ? "Generation completed. Review the image below and iterate if needed."
+                : "Request accepted by workflow. Image preview appears when generated output is returned."}
             </p>
             {lastSuccess ? <ResultMetadataChips response={lastSuccess.response} /> : null}
             {firstGeneratedImageUrl ? (
@@ -256,28 +208,51 @@ export default function ProductShootsRoute() {
                 </a>
               </div>
             ) : null}
+
+            {/* Input summary */}
             {lastSuccess ? (
-              <pre className="max-h-72 overflow-auto bg-surface-alt p-3 text-xs text-ink-soft">
-                {JSON.stringify(lastSuccess.payload.parameters, null, 2)}
-              </pre>
+              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  Input Used
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  <div>
+                    <p className="text-[10px] font-medium text-ink-muted">Prompt</p>
+                    <p className="text-ink">{lastSuccess.payload.prompt}</p>
+                  </div>
+                  {lastSuccess.payload.parameters.negative_prompt ? (
+                    <div>
+                      <p className="text-[10px] font-medium text-ink-muted">Negative prompt</p>
+                      <p className="text-ink-soft">
+                        {lastSuccess.payload.parameters.negative_prompt}
+                      </p>
+                    </div>
+                  ) : null}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-muted">
+                    <span>
+                      Size: {lastSuccess.payload.parameters.size?.replace("*", "\u00d7")}
+                    </span>
+                    <span>Format: {lastSuccess.payload.parameters.output_format ?? "png"}</span>
+                  </div>
+                </div>
+              </div>
             ) : null}
-            <div className="flex flex-wrap gap-3">
-              <Button
-                type="button"
-                variant="ghost"
-                onPress={() => {
-                  if (!window.confirm("Discard this product shoot draft?")) {
-                    return;
-                  }
-                  setFormValues(defaultProductShootsValues);
-                  setErrors({});
-                  setSubmitError(null);
-                  setCurrentStep(0);
-                }}
-              >
-                Reset Draft
-              </Button>
-            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              onPress={() => {
+                if (!window.confirm("Discard this ad graphic draft?")) {
+                  return;
+                }
+                setFormValues(defaultProductShootsValues);
+                setErrors({});
+                setSubmitError(null);
+                setCurrentStep(0);
+              }}
+            >
+              Reset Draft
+            </Button>
           </Card>
         }
       />
@@ -288,36 +263,34 @@ export default function ProductShootsRoute() {
     <div className="container-shell py-6 sm:py-8">
       <StudioStepperLayout
         workflow="Ad Graphics"
-        title="Text-to-Image Ad Graphic Creation"
-        description="Move from brief to generated ad concepts with progressive validation and clear controls."
+        title="Text-to-Image Ad Graphic"
+        description="Describe your ad graphic, choose size and format, then generate."
         steps={PRODUCT_STEPS}
         statuses={stepStatuses}
         currentStep={boundedStep}
         onStepSelect={(index) => setCurrentStep(index)}
         canSelectStep={(index) => {
-          if (index === 3 && !lastSuccess) {
+          if (index === 1 && !lastSuccess) {
             return false;
           }
           return canNavigateToStep(index, boundedStep, stepValidity);
         }}
-        onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+        onBack={() => {
+          if (boundedStep === 1) {
+            setCurrentStep(0);
+          }
+        }}
         canBack={boundedStep > 0}
         onPrimaryAction={() => {
-          if (boundedStep < 2) {
-            handleContinue();
-            return;
-          }
-          if (boundedStep === 2) {
+          if (boundedStep === 0) {
             handleGenerate();
             return;
           }
-          setCurrentStep(2);
+          setCurrentStep(0);
         }}
-        primaryActionLabel={
-          boundedStep < 2 ? "Continue" : boundedStep === 2 ? "Generate" : "Back to Controls"
-        }
-        primaryActionPendingLabel="Generating…"
-        primaryActionTone={boundedStep === 2 ? "primary" : "secondary"}
+        primaryActionLabel={boundedStep === 0 ? "Generate" : "Back to Edit"}
+        primaryActionPendingLabel="Generating\u2026"
+        primaryActionTone={boundedStep === 0 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
       >
         {renderStepContent()}

@@ -19,7 +19,7 @@ export function buildProductShootsPayload(values: ProductShootsFormValues): Prod
     parameters: {
       size: values.size,
       n: 1,
-      prompt_extend: values.prompt_extend,
+      prompt_extend: true,
       watermark: false,
       response_format: "url",
       output_format: values.output_format,

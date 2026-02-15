@@ -8,14 +8,12 @@ import { EditInstructionTextarea } from "../../components/molecules/EditInstruct
 import { ImageDropzone } from "../../components/molecules/ImageDropzone";
 import { ImagePreviewCard } from "../../components/molecules/ImagePreviewCard";
 import { NegativePromptTextarea } from "../../components/molecules/NegativePromptTextarea";
-import { PromptExtendToggle } from "../../components/molecules/PromptExtendToggle";
 import {
   PromptTemplatePicker,
   composePromptFromSelections,
 } from "../../components/molecules/PromptTemplatePicker";
 import { ReferenceImageInputTabs } from "../../components/molecules/ReferenceImageInputTabs";
 import { ResultMetadataChips } from "../../components/molecules/ResultMetadataChips";
-import { SeedInput } from "../../features/parameters/components/seed-input";
 import { SizePresetSelect } from "../../components/molecules/SizePresetSelect";
 import { UseCasePresetPicker } from "../../components/molecules/UseCasePresetPicker";
 import { ResultPanel } from "../../components/organisms/ResultPanel";
@@ -57,7 +55,6 @@ const AD_FIELD_IDS: Record<AdGraphicsField, string> = {
   referenceImageUrl: "reference-image-url",
   prompt: "edit-instruction",
   negative_prompt: "ad-graphics-negative-prompt",
-  seed: "ad-seed",
   customSize: "custom-size-width",
 };
 
@@ -88,7 +85,6 @@ function buildAdvancedSummary(formValues: {
   sizePreset: string;
   customWidth: string;
   customHeight: string;
-  prompt_extend: boolean;
   negative_prompt: string;
 }) {
   const size =
@@ -96,7 +92,6 @@ function buildAdvancedSummary(formValues: {
       ? formValues.sizePreset.replace("*", "\u00d7")
       : `${formValues.customWidth}\u00d7${formValues.customHeight}`;
   const parts = [size];
-  parts.push(formValues.prompt_extend ? "Prompt Extend On" : "Prompt Extend Off");
   if (formValues.negative_prompt.trim()) {
     parts.push("Negative prompt applied");
   }
@@ -214,7 +209,6 @@ export default function AdGraphicsRoute() {
     positivePromptBase: string;
     negativePrompt: string;
     sizePreset: string;
-    promptExtend: boolean;
   }) {
     const composed = composePromptFromSelections(
       preset.positivePromptBase,
@@ -228,7 +222,6 @@ export default function AdGraphicsRoute() {
       negative_prompt: preset.negativePrompt,
       sizePreset: preset.sizePreset as typeof current.sizePreset,
       sizeMode: "preset",
-      prompt_extend: preset.promptExtend,
     }));
   }
 
@@ -450,18 +443,6 @@ export default function AdGraphicsRoute() {
                     </div>
                   )}
 
-                  <PromptExtendToggle
-                    id="ad-prompt-extend"
-                    checked={formValues.prompt_extend}
-                    onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
-                  />
-
-                  <SeedInput
-                    id="ad-seed"
-                    value={formValues.seed}
-                    onChange={(next) => setFormValues({ ...formValues, seed: next })}
-                    error={errors.seed}
-                  />
                 </Disclosure.Body>
               </Disclosure.Content>
             </Disclosure>
@@ -550,10 +531,6 @@ export default function AdGraphicsRoute() {
                     <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-muted">
                       <span>
                         Size: {lastSuccess.payload.parameters.size?.replace("*", "\u00d7")}
-                      </span>
-                      <span>
-                        Prompt Extend:{" "}
-                        {lastSuccess.payload.parameters.prompt_extend ? "On" : "Off"}
                       </span>
                     </div>
                   </div>

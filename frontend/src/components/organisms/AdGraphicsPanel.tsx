@@ -6,8 +6,6 @@ import type {
 } from "../../features/ad-graphics/schema";
 import { EditInstructionTextarea } from "../../features/parameters/components/edit-instruction-textarea";
 import { NegativePromptTextarea } from "../../features/parameters/components/negative-prompt-textarea";
-import { PromptExtendToggle } from "../../features/parameters/components/prompt-extend-toggle";
-import { SeedInput } from "../../features/parameters/components/seed-input";
 import { SizePresetSelect } from "../../features/parameters/components/size-preset-select";
 import { WatermarkToggle } from "../../features/parameters/components/watermark-toggle";
 import { TextField } from "../atoms/TextField";
@@ -188,17 +186,6 @@ export function AdGraphicsPanel({
         </div>
 
         <div className="space-y-3">
-          <SeedInput
-            id="ad-seed"
-            value={values.seed}
-            onChange={(next) => onChange({ ...values, seed: next })}
-            error={errors.seed}
-          />
-          <PromptExtendToggle
-            id="ad-prompt-extend"
-            checked={values.prompt_extend}
-            onChange={(next) => onChange({ ...values, prompt_extend: next })}
-          />
           <WatermarkToggle
             id="ad-watermark"
             checked={values.watermark}

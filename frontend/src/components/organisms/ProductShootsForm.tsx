@@ -5,9 +5,7 @@ import type {
 } from "../../features/product-shoots/schema";
 import { NegativePromptTextarea } from "../../features/parameters/components/negative-prompt-textarea";
 import { OutputFormatSelect } from "../../features/parameters/components/output-format-select";
-import { PromptExtendToggle } from "../../features/parameters/components/prompt-extend-toggle";
 import { PromptTextarea } from "../../features/parameters/components/prompt-textarea";
-import { SeedInput } from "../../features/parameters/components/seed-input";
 import { SizePresetSelect } from "../../features/parameters/components/size-preset-select";
 import { WatermarkToggle } from "../../features/parameters/components/watermark-toggle";
 import { GenerateButton } from "../molecules/GenerateButton";
@@ -78,18 +76,7 @@ export function ProductShootsForm({
                 onChange={(next) => onChange({ ...values, output_format: next })}
                 error={errors.output_format}
               />
-              <SeedInput
-                id="product-seed"
-                value={values.seed}
-                onChange={(next) => onChange({ ...values, seed: next })}
-                error={errors.seed}
-              />
               <div className="space-y-3">
-                <PromptExtendToggle
-                  id="product-prompt-extend"
-                  checked={values.prompt_extend}
-                  onChange={(next) => onChange({ ...values, prompt_extend: next })}
-                />
                 <WatermarkToggle
                   id="product-watermark"
                   checked={values.watermark}

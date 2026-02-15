@@ -7,18 +7,16 @@ export const defaultProductShootsValues: ProductShootsFormValues = {
   prompt: "",
   negative_prompt: "",
   size: "1328*1328",
-  seed: "",
-  prompt_extend: true,
   watermark: false,
   output_format: "png",
 };
 
 export const productShootsFormAtom = atomWithStorage<ProductShootsFormValues>(
-  "addreams:product-shoots:draft:v2",
+  "addreams:product-shoots:draft:v3",
   defaultProductShootsValues,
 );
 
-export const productShootsStepAtom = atomWithStorage<number>("addreams:product-shoots:step:v2", 0);
+export const productShootsStepAtom = atomWithStorage<number>("addreams:product-shoots:step:v3", 0);
 
 export type ProductShootsSuccessRecord = {
   payload: ProductShootsRequest;

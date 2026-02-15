@@ -17,8 +17,6 @@ export const defaultAdGraphicsValues: AdGraphicsFormValues = {
   sizePreset: defaultPreset.sizePreset,
   customWidth: "",
   customHeight: "",
-  seed: "",
-  prompt_extend: defaultPreset.promptExtend,
   watermark: false,
   selectedPreset: DEFAULT_PRESET_ID,
 };
@@ -35,14 +33,12 @@ const defaultAdGraphicsPersistedValues: AdGraphicsPersistedValues = {
   sizePreset: defaultAdGraphicsValues.sizePreset,
   customWidth: defaultAdGraphicsValues.customWidth,
   customHeight: defaultAdGraphicsValues.customHeight,
-  seed: defaultAdGraphicsValues.seed,
-  prompt_extend: defaultAdGraphicsValues.prompt_extend,
   watermark: defaultAdGraphicsValues.watermark,
   selectedPreset: defaultAdGraphicsValues.selectedPreset,
 };
 
 const adGraphicsPersistedAtom = atomWithStorage<AdGraphicsPersistedValues>(
-  "addreams:ad-graphics:draft:v4",
+  "addreams:ad-graphics:draft:v5",
   defaultAdGraphicsPersistedValues,
 );
 
@@ -67,7 +63,7 @@ export const adGraphicsFormAtom = atom(
   },
 );
 
-export const adGraphicsStepAtom = atomWithStorage<number>("addreams:ad-graphics:step:v4", 0);
+export const adGraphicsStepAtom = atomWithStorage<number>("addreams:ad-graphics:step:v5", 0);
 
 export type AdGraphicsSuccessRecord = {
   payload: AdGraphicsRequest;
