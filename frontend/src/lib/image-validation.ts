@@ -60,6 +60,37 @@ export function isValidCustomSize(width: number, height: number): ImageValidatio
   return { valid: true };
 }
 
+export type ImageDimensions = { width: number; height: number };
+
+export function getImageDimensions(file: File): Promise<ImageDimensions> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Unable to read image dimensions."));
+    };
+    img.src = url;
+  });
+}
+
+export function checkImageQuality(
+  width: number,
+  height: number,
+): { isLowRes: boolean; message?: string } {
+  if (width < 512 || height < 512) {
+    return {
+      isLowRes: true,
+      message: `Image is ${width}\u00d7${height}px. Images under 512px on either side may produce blurry results.`,
+    };
+  }
+  return { isLowRes: false };
+}
+
 export function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

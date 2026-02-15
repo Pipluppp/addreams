@@ -17,6 +17,7 @@ export type AdGraphicsFormValues = {
   seed: string;
   prompt_extend: boolean;
   watermark: boolean;
+  selectedPreset: string;
 };
 
 export type AdGraphicsField =

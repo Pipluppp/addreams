@@ -2,6 +2,22 @@ import type { AdGraphicsRequest } from "../../lib/api";
 import { fileToDataUrl } from "../../lib/image-validation";
 import type { AdGraphicsFormValues } from "./schema";
 
+const PEOPLE_PATTERN = /\b(person|model|woman|man|couple|family|portrait)\b/i;
+const PEOPLE_NEGATIVE_SUFFIX =
+  "different ethnicity, different hair color, different face shape";
+
+export function augmentNegativePrompt(base: string, prompt: string): string {
+  if (!PEOPLE_PATTERN.test(prompt)) {
+    return base;
+  }
+
+  if (base.includes(PEOPLE_NEGATIVE_SUFFIX)) {
+    return base;
+  }
+
+  return base.length ? `${base}, ${PEOPLE_NEGATIVE_SUFFIX}` : PEOPLE_NEGATIVE_SUFFIX;
+}
+
 async function resolveReferenceImage(values: AdGraphicsFormValues): Promise<string> {
   if (values.referenceMode === "url") {
     return values.referenceImageUrl.trim();
@@ -29,7 +45,7 @@ export async function buildAdGraphicsPayload(
 ): Promise<AdGraphicsRequest> {
   const prompt = values.prompt.trim();
   const referenceImageUrl = await resolveReferenceImage(values);
-  const negativePrompt = values.negative_prompt.trim();
+  const negativePrompt = augmentNegativePrompt(values.negative_prompt.trim(), prompt);
 
   return {
     prompt,

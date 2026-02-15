@@ -8,6 +8,7 @@ type PromptTextareaProps = {
   onChange: (next: string) => void;
   error?: string;
   label?: string;
+  placeholder?: string;
 };
 
 const SOFT_WARNING_THRESHOLD = 420;
@@ -18,6 +19,7 @@ export function PromptTextarea({
   onChange,
   error,
   label = "Prompt",
+  placeholder = "Describe the product scene, style, and composition\u2026",
 }: PromptTextareaProps) {
   const length = value.length;
   const warning = length >= SOFT_WARNING_THRESHOLD;
@@ -29,7 +31,7 @@ export function PromptTextarea({
         id={id}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Describe the product scene, style, and composition…"
+        placeholder={placeholder}
         rows={5}
         maxLength={MAX_PROMPT_LENGTH}
       />

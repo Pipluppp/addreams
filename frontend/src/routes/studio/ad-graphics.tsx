@@ -1,22 +1,30 @@
 import { useAtom } from "jotai";
-import { useEffect, useState } from "react";
-import { Button, Card } from "@heroui/react";
+import { useEffect, useMemo, useState } from "react";
+import { Button, Card, Disclosure } from "@heroui/react";
 import { TextField } from "../../components/atoms/TextField";
 import { ToggleField } from "../../components/atoms/ToggleField";
+import { GuidanceCallout } from "../../components/atoms/GuidanceCallout";
 import { EditInstructionTextarea } from "../../components/molecules/EditInstructionTextarea";
 import { ImageDropzone } from "../../components/molecules/ImageDropzone";
 import { ImagePreviewCard } from "../../components/molecules/ImagePreviewCard";
 import { NegativePromptTextarea } from "../../components/molecules/NegativePromptTextarea";
 import { PromptExtendToggle } from "../../components/molecules/PromptExtendToggle";
+import {
+  PromptTemplatePicker,
+  composePromptFromSelections,
+} from "../../components/molecules/PromptTemplatePicker";
 import { ReferenceImageInputTabs } from "../../components/molecules/ReferenceImageInputTabs";
 import { ResultMetadataChips } from "../../components/molecules/ResultMetadataChips";
+import { SeedInput } from "../../features/parameters/components/seed-input";
 import { SizePresetSelect } from "../../components/molecules/SizePresetSelect";
+import { UseCasePresetPicker } from "../../components/molecules/UseCasePresetPicker";
 import { ResultPanel } from "../../components/organisms/ResultPanel";
 import { StudioStepperLayout } from "../../components/organisms/StudioStepperLayout";
 import {
   adGraphicsFormAtom,
   adGraphicsLastSuccessAtom,
   adGraphicsStepAtom,
+  adGraphicsTemplateSelectionsAtom,
   defaultAdGraphicsValues,
 } from "../../features/ad-graphics/state";
 import { useAdGraphicsMutation } from "../../features/ad-graphics/use-ad-graphics-mutation";
@@ -25,15 +33,22 @@ import {
   type AdGraphicsField,
   type AdGraphicsValidationErrors,
 } from "../../features/ad-graphics/schema";
+import { USE_CASE_PRESETS, getPresetById } from "../../features/ad-graphics/presets";
+import { PROMPT_TEMPLATES } from "../../features/ad-graphics/prompt-templates";
+import { detectIntentWarnings } from "../../features/ad-graphics/intent-detection";
+import { augmentNegativePrompt } from "../../features/ad-graphics/payload";
 import { focusFirstError } from "../../lib/focus-first-error";
-import { validateReferenceImageFile } from "../../lib/image-validation";
+import {
+  checkImageQuality,
+  getImageDimensions,
+  validateReferenceImageFile,
+  type ImageDimensions,
+} from "../../lib/image-validation";
 import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 
 const AD_STEPS = [
-  { id: "brief", label: "Creative Brief" },
-  { id: "inputs", label: "Inputs" },
-  { id: "controls", label: "Creative Controls" },
+  { id: "compose", label: "Your Product Shot" },
   { id: "result", label: "Result & Iterate" },
 ] as const;
 
@@ -48,34 +63,73 @@ const AD_FIELD_IDS: Record<AdGraphicsField, string> = {
 
 function validateAdStep(step: number, errors: AdGraphicsValidationErrors, hasSuccess: boolean) {
   if (step === 0) {
-    return !errors.prompt;
-  }
-  if (step === 1) {
-    return !errors.referenceImage && !errors.referenceImageUrl;
-  }
-  if (step === 2) {
-    return !errors.negative_prompt && !errors.customSize;
+    return (
+      !errors.prompt &&
+      !errors.referenceImage &&
+      !errors.referenceImageUrl &&
+      !errors.negative_prompt &&
+      !errors.customSize
+    );
   }
   return hasSuccess;
+}
+
+function useDebounced<T>(value: T, delayMs: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(id);
+  }, [value, delayMs]);
+  return debounced;
+}
+
+function buildAdvancedSummary(formValues: {
+  sizeMode: string;
+  sizePreset: string;
+  customWidth: string;
+  customHeight: string;
+  prompt_extend: boolean;
+  negative_prompt: string;
+}) {
+  const size =
+    formValues.sizeMode === "preset"
+      ? formValues.sizePreset.replace("*", "\u00d7")
+      : `${formValues.customWidth}\u00d7${formValues.customHeight}`;
+  const parts = [size];
+  parts.push(formValues.prompt_extend ? "Prompt Extend On" : "Prompt Extend Off");
+  if (formValues.negative_prompt.trim()) {
+    parts.push("Negative prompt applied");
+  }
+  return parts.join(" \u00b7 ");
 }
 
 export default function AdGraphicsRoute() {
   const [formValues, setFormValues] = useAtom(adGraphicsFormAtom);
   const [currentStep, setCurrentStep] = useAtom(adGraphicsStepAtom);
   const [lastSuccess, setLastSuccess] = useAtom(adGraphicsLastSuccessAtom);
+  const [templateSelections, setTemplateSelections] = useAtom(adGraphicsTemplateSelectionsAtom);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<AdGraphicsValidationErrors>({});
   const [uploadPreviewUrl, setUploadPreviewUrl] = useState<string | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<ImageDimensions | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [templatesExpanded, setTemplatesExpanded] = useState(false);
   const mutation = useAdGraphicsMutation();
 
   useEffect(() => {
     if (formValues.referenceMode !== "upload" || !formValues.referenceImageFile) {
       setUploadPreviewUrl(null);
+      setImageDimensions(null);
       return;
     }
 
     const nextUrl = URL.createObjectURL(formValues.referenceImageFile);
     setUploadPreviewUrl(nextUrl);
+
+    getImageDimensions(formValues.referenceImageFile)
+      .then(setImageDimensions)
+      .catch(() => setImageDimensions(null));
+
     return () => URL.revokeObjectURL(nextUrl);
   }, [formValues.referenceMode, formValues.referenceImageFile]);
 
@@ -97,32 +151,23 @@ export default function AdGraphicsRoute() {
       ? formValues.referenceImageUrl.trim() || null
       : uploadPreviewUrl;
 
-  function focusStepError(step: number, stepErrors: AdGraphicsValidationErrors) {
-    const stepFieldOrder: Record<number, AdGraphicsField[]> = {
-      0: ["prompt"],
-      1: ["referenceImage", "referenceImageUrl"],
-      2: ["negative_prompt", "customSize"],
-      3: [],
-    };
+  const activePreset = getPresetById(formValues.selectedPreset);
+  const debouncedPrompt = useDebounced(formValues.prompt, 500);
+  const intentWarnings = useMemo(
+    () => detectIntentWarnings(debouncedPrompt),
+    [debouncedPrompt],
+  );
 
-    for (const field of stepFieldOrder[step] ?? []) {
-      if (stepErrors[field]) {
-        focusFirstError(stepErrors, AD_FIELD_IDS);
-        return;
-      }
-    }
-  }
+  const imageQuality = imageDimensions
+    ? checkImageQuality(imageDimensions.width, imageDimensions.height)
+    : null;
 
-  function handleContinue() {
-    if (!validateAdStep(boundedStep, validation.errors, Boolean(lastSuccess))) {
-      setErrors(validation.errors);
-      focusStepError(boundedStep, validation.errors);
-      return;
-    }
+  const effectiveNegativePrompt = useMemo(
+    () => augmentNegativePrompt(formValues.negative_prompt.trim(), formValues.prompt.trim()),
+    [formValues.negative_prompt, formValues.prompt],
+  );
 
-    setSubmitError(null);
-    setCurrentStep((step) => Math.min(step + 1, AD_STEPS.length - 1));
-  }
+  const hasAugmentation = effectiveNegativePrompt !== formValues.negative_prompt.trim();
 
   function handleGenerate() {
     if (!validation.isValid) {
@@ -137,7 +182,7 @@ export default function AdGraphicsRoute() {
     mutation.mutate(formValues, {
       onSuccess: (result) => {
         setLastSuccess(result);
-        setCurrentStep(3);
+        setCurrentStep(1);
       },
       onError: (error) => {
         setSubmitError(error instanceof Error ? error.message : "Request failed.");
@@ -164,86 +209,81 @@ export default function AdGraphicsRoute() {
     }));
   }
 
+  function handlePresetSelect(preset: {
+    id: string;
+    positivePromptBase: string;
+    negativePrompt: string;
+    sizePreset: string;
+    promptExtend: boolean;
+  }) {
+    const composed = composePromptFromSelections(
+      preset.positivePromptBase,
+      templateSelections,
+      PROMPT_TEMPLATES,
+    );
+    setFormValues((current) => ({
+      ...current,
+      selectedPreset: preset.id,
+      prompt: composed,
+      negative_prompt: preset.negativePrompt,
+      sizePreset: preset.sizePreset as typeof current.sizePreset,
+      sizeMode: "preset",
+      prompt_extend: preset.promptExtend,
+    }));
+  }
+
+  function handleTemplateSelectionsChange(next: Record<string, string | null>) {
+    setTemplateSelections(next);
+    const presetBase = activePreset?.positivePromptBase ?? "";
+    const composed = composePromptFromSelections(presetBase, next, PROMPT_TEMPLATES);
+    setFormValues((current) => ({ ...current, prompt: composed }));
+  }
+
   function renderStepContent() {
     const generatedImages = lastSuccess ? getWorkflowOutputImages(lastSuccess.response) : [];
     const isCompleted = lastSuccess ? isWorkflowCompletedResponse(lastSuccess.response) : false;
 
     if (boundedStep === 0) {
       return (
-        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
+        <Card className="space-y-5 bg-surface-alt p-5 sm:p-6">
+          {/* Reference Image Section */}
           <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <EditInstructionTextarea
-              id="edit-instruction"
-              label="Shoot Direction"
-              value={formValues.prompt}
-              onChange={(next) => setFormValues({ ...formValues, prompt: next })}
-              error={errors.prompt}
-            />
-            <p className="text-xs text-ink-muted">
-              Tip: use positional language, such as "replace top-right badge with matte gold seal."
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Product Reference
             </p>
-          </div>
-        </Card>
-      );
-    }
-
-    if (boundedStep === 1) {
-      return (
-        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div className="space-y-3 rounded-xl bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Source Type
-              </p>
-              <p className="text-xs text-ink-soft">Choose how the product image enters the workflow.</p>
-              <ReferenceImageInputTabs
-                value={formValues.referenceMode}
-                onChange={(mode) =>
+            <ReferenceImageInputTabs
+              value={formValues.referenceMode}
+              onChange={(mode) =>
+                setFormValues((current) => ({
+                  ...current,
+                  referenceMode: mode,
+                  referenceImageFile: mode === "upload" ? current.referenceImageFile : null,
+                  referenceImageUrl: mode === "url" ? current.referenceImageUrl : "",
+                }))
+              }
+            />
+            {formValues.referenceMode === "url" ? (
+              <TextField
+                id="reference-image-url"
+                label="Reference image URL"
+                value={formValues.referenceImageUrl}
+                onChange={(event) =>
                   setFormValues((current) => ({
                     ...current,
-                    referenceMode: mode,
-                    referenceImageFile: mode === "upload" ? current.referenceImageFile : null,
-                    referenceImageUrl: mode === "url" ? current.referenceImageUrl : "",
+                    referenceImageUrl: event.target.value,
                   }))
                 }
+                placeholder="https://example.com/reference-image.png"
+                error={errors.referenceImageUrl}
               />
-            </div>
-
-            <div className="space-y-3 rounded-xl bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Product Reference
-              </p>
-              <p className="text-xs text-ink-soft">
-                Provide the source image used for targeted product edits.
-              </p>
-              {formValues.referenceMode === "url" ? (
-                <TextField
-                  id="reference-image-url"
-                  label="Reference image URL"
-                  value={formValues.referenceImageUrl}
-                  onChange={(event) =>
-                    setFormValues((current) => ({
-                      ...current,
-                      referenceImageUrl: event.target.value,
-                    }))
-                  }
-                  placeholder="https://example.com/reference-image.png"
-                  error={errors.referenceImageUrl}
-                />
-              ) : (
-                <ImageDropzone
-                  onFileSelected={handleFileSelected}
-                  error={errors.referenceImage}
-                  buttonId="reference-upload-button"
-                />
-              )}
-            </div>
-          </div>
-          {previewUrl ? (
-            <div className="space-y-3 rounded-xl bg-canvas p-5">
-              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                Preview
-              </p>
+            ) : (
+              <ImageDropzone
+                onFileSelected={handleFileSelected}
+                error={errors.referenceImage}
+                buttonId="reference-upload-button"
+              />
+            )}
+            {previewUrl ? (
               <ImagePreviewCard
                 src={previewUrl}
                 alt="Reference preview"
@@ -258,96 +298,173 @@ export default function AdGraphicsRoute() {
                     referenceImageFile: null,
                     referenceImageUrl: "",
                   }));
+                  setImageDimensions(null);
                 }}
               />
+            ) : null}
+            {imageQuality?.isLowRes ? (
+              <GuidanceCallout tone="warning">{imageQuality.message}</GuidanceCallout>
+            ) : null}
+          </div>
+
+          {/* Use-Case Preset Picker */}
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+              Use Case
+            </p>
+            <UseCasePresetPicker
+              presets={USE_CASE_PRESETS}
+              selectedPresetId={formValues.selectedPreset}
+              onSelect={handlePresetSelect}
+            />
+          </div>
+
+          {/* Prompt Section */}
+          <div className="space-y-3 rounded-xl bg-canvas p-5">
+            <EditInstructionTextarea
+              id="edit-instruction"
+              label="Shoot Direction"
+              value={formValues.prompt}
+              onChange={(next) => setFormValues({ ...formValues, prompt: next })}
+              error={errors.prompt}
+              placeholder={activePreset?.promptHint}
+            />
+            <PromptTemplatePicker
+              templates={PROMPT_TEMPLATES}
+              selections={templateSelections}
+              onSelectionsChange={handleTemplateSelectionsChange}
+              isExpanded={templatesExpanded}
+              onExpandedChange={setTemplatesExpanded}
+            />
+            {intentWarnings.map((warning) => (
+              <GuidanceCallout key={warning.id} tone="warning">
+                {warning.message}
+              </GuidanceCallout>
+            ))}
+            <GuidanceCallout tone="tip">
+              Works best: changing backgrounds, lighting, adding props, styling scenes.
+            </GuidanceCallout>
+          </div>
+
+          {/* Payload Preview */}
+          {formValues.prompt.trim() ? (
+            <div className="space-y-2 rounded-xl border border-ink-muted/10 bg-canvas p-4">
+              <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                What will be sent
+              </p>
+              <div className="space-y-1.5">
+                <div>
+                  <p className="text-[10px] font-medium text-ink-muted">Positive prompt</p>
+                  <p className="text-xs text-ink">{formValues.prompt.trim()}</p>
+                </div>
+                {effectiveNegativePrompt ? (
+                  <div>
+                    <p className="text-[10px] font-medium text-ink-muted">
+                      Negative prompt
+                      {hasAugmentation ? (
+                        <span className="ml-1 text-accent"> (auto-augmented)</span>
+                      ) : null}
+                    </p>
+                    <p className="text-xs text-ink-soft">{effectiveNegativePrompt}</p>
+                  </div>
+                ) : null}
+              </div>
             </div>
           ) : null}
-        </Card>
-      );
-    }
 
-    if (boundedStep === 2) {
-      return (
-        <Card className="space-y-4 bg-surface-alt p-5 sm:p-6">
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Exclusions
-            </p>
-            <NegativePromptTextarea
-              id="ad-graphics-negative-prompt"
-              value={formValues.negative_prompt}
-              onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
-              error={errors.negative_prompt}
-            />
-          </div>
+          {/* Advanced Options */}
+          <div className="rounded-xl bg-canvas p-5">
+            <Disclosure isExpanded={advancedOpen} onExpandedChange={setAdvancedOpen}>
+              <Disclosure.Heading>
+                <Disclosure.Trigger className="flex w-full cursor-pointer items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Disclosure.Indicator />
+                    <span className="text-xs font-medium text-ink-soft">Advanced Options</span>
+                  </div>
+                  {!advancedOpen ? (
+                    <span className="text-[10px] text-ink-muted">
+                      {buildAdvancedSummary(formValues)}
+                    </span>
+                  ) : null}
+                </Disclosure.Trigger>
+              </Disclosure.Heading>
+              <Disclosure.Content>
+                <Disclosure.Body className="space-y-4 pt-4">
+                  <NegativePromptTextarea
+                    id="ad-graphics-negative-prompt"
+                    value={formValues.negative_prompt}
+                    onChange={(next) => setFormValues({ ...formValues, negative_prompt: next })}
+                    error={errors.negative_prompt}
+                  />
 
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Output Size
-            </p>
-            <ToggleField
-              id="ad-custom-size-toggle"
-              label="Custom size mode"
-              helperText="Enable manual width and height bounds."
-              checked={formValues.sizeMode === "custom"}
-              onChange={(isSelected) =>
-                setFormValues({
-                  ...formValues,
-                  sizeMode: isSelected ? "custom" : "preset",
-                })
-              }
-            />
+                  <ToggleField
+                    id="ad-custom-size-toggle"
+                    label="Custom size mode"
+                    helperText="Enable manual width and height bounds."
+                    checked={formValues.sizeMode === "custom"}
+                    onChange={(isSelected) =>
+                      setFormValues({
+                        ...formValues,
+                        sizeMode: isSelected ? "custom" : "preset",
+                      })
+                    }
+                  />
 
-            {formValues.sizeMode === "preset" ? (
-              <SizePresetSelect
-                id="ad-size-preset"
-                value={formValues.sizePreset}
-                onChange={(next) =>
-                  setFormValues({
-                    ...formValues,
-                    sizePreset: next as typeof formValues.sizePreset,
-                  })
-                }
-              />
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <TextField
-                  id="custom-size-width"
-                  label="Custom width"
-                  value={formValues.customWidth}
-                  onChange={(event) =>
-                    setFormValues({ ...formValues, customWidth: event.target.value })
-                  }
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="1024"
-                  error={errors.customSize}
-                />
-                <TextField
-                  id="custom-size-height"
-                  label="Custom height"
-                  value={formValues.customHeight}
-                  onChange={(event) =>
-                    setFormValues({ ...formValues, customHeight: event.target.value })
-                  }
-                  type="number"
-                  inputMode="numeric"
-                  placeholder="1024"
-                  error={errors.customSize}
-                />
-              </div>
-            )}
-          </div>
+                  {formValues.sizeMode === "preset" ? (
+                    <SizePresetSelect
+                      id="ad-size-preset"
+                      value={formValues.sizePreset}
+                      onChange={(next) =>
+                        setFormValues({
+                          ...formValues,
+                          sizePreset: next as typeof formValues.sizePreset,
+                        })
+                      }
+                    />
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <TextField
+                        id="custom-size-width"
+                        label="Custom width"
+                        value={formValues.customWidth}
+                        onChange={(event) =>
+                          setFormValues({ ...formValues, customWidth: event.target.value })
+                        }
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="1024"
+                        error={errors.customSize}
+                      />
+                      <TextField
+                        id="custom-size-height"
+                        label="Custom height"
+                        value={formValues.customHeight}
+                        onChange={(event) =>
+                          setFormValues({ ...formValues, customHeight: event.target.value })
+                        }
+                        type="number"
+                        inputMode="numeric"
+                        placeholder="1024"
+                        error={errors.customSize}
+                      />
+                    </div>
+                  )}
 
-          <div className="space-y-3 rounded-xl bg-canvas p-5">
-            <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-              Generation Option
-            </p>
-            <PromptExtendToggle
-              id="ad-prompt-extend"
-              checked={formValues.prompt_extend}
-              onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
-            />
+                  <PromptExtendToggle
+                    id="ad-prompt-extend"
+                    checked={formValues.prompt_extend}
+                    onChange={(next) => setFormValues({ ...formValues, prompt_extend: next })}
+                  />
+
+                  <SeedInput
+                    id="ad-seed"
+                    value={formValues.seed}
+                    onChange={(next) => setFormValues({ ...formValues, seed: next })}
+                    error={errors.seed}
+                  />
+                </Disclosure.Body>
+              </Disclosure.Content>
+            </Disclosure>
           </div>
         </Card>
       );
@@ -358,18 +475,20 @@ export default function AdGraphicsRoute() {
         isPending={mutation.isPending}
         error={submitError}
         isEmpty={!lastSuccess}
-        emptyLabel="No product shoot results yet. Complete controls and run generate."
-        loadingLabel="Generating ad graphic…"
-        onIterate={() => setCurrentStep(2)}
-        iterateLabel="Back to Controls"
+        emptyLabel="No product shoot results yet. Complete the form and hit Generate."
+        loadingLabel="Generating ad graphic\u2026"
+        onIterate={() => setCurrentStep(0)}
+        iterateLabel="Back to Edit"
         successContent={
-          <Card className="space-y-4 p-4 sm:p-5">
+          <Card className="space-y-5 p-4 sm:p-5">
             <p className="text-sm text-ink-soft">
               {isCompleted
                 ? "Generation completed. Edited output image variants are shown below."
                 : "Request accepted by workflow. Edited image previews appear when generated output is returned."}
             </p>
             {lastSuccess ? <ResultMetadataChips response={lastSuccess.response} /> : null}
+
+            {/* Generated Images */}
             {generatedImages.length ? (
               <div className="space-y-3">
                 <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
@@ -400,20 +519,48 @@ export default function AdGraphicsRoute() {
                 </div>
               </div>
             ) : null}
+
+            {/* Input summary: reference image + prompts used */}
             {lastSuccess ? (
-              <pre className="max-h-72 overflow-auto bg-surface-alt p-3 text-xs text-ink-soft">
-                {JSON.stringify(
-                  {
-                    referenceImageSource:
-                      lastSuccess.payload.referenceImageUrl.slice(0, 80) +
-                      (lastSuccess.payload.referenceImageUrl.length > 80 ? "…" : ""),
-                    parameters: lastSuccess.payload.parameters,
-                  },
-                  null,
-                  2,
-                )}
-              </pre>
+              <div className="space-y-3 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  Input Used
+                </p>
+                <div className="grid gap-4 sm:grid-cols-[auto_1fr]">
+                  <img
+                    src={lastSuccess.payload.referenceImageUrl}
+                    alt="Reference input"
+                    loading="lazy"
+                    decoding="async"
+                    className="h-auto w-full max-w-40 rounded-lg bg-canvas object-contain sm:w-40"
+                  />
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="text-[10px] font-medium text-ink-muted">Positive prompt</p>
+                      <p className="text-ink">{lastSuccess.payload.prompt}</p>
+                    </div>
+                    {lastSuccess.payload.parameters.negative_prompt ? (
+                      <div>
+                        <p className="text-[10px] font-medium text-ink-muted">Negative prompt</p>
+                        <p className="text-ink-soft">
+                          {lastSuccess.payload.parameters.negative_prompt}
+                        </p>
+                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-ink-muted">
+                      <span>
+                        Size: {lastSuccess.payload.parameters.size?.replace("*", "\u00d7")}
+                      </span>
+                      <span>
+                        Prompt Extend:{" "}
+                        {lastSuccess.payload.parameters.prompt_extend ? "On" : "Off"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : null}
+
             <Button
               type="button"
               variant="ghost"
@@ -422,6 +569,7 @@ export default function AdGraphicsRoute() {
                   return;
                 }
                 setFormValues(defaultAdGraphicsValues);
+                setTemplateSelections({});
                 setErrors({});
                 setSubmitError(null);
                 setCurrentStep(0);
@@ -439,36 +587,34 @@ export default function AdGraphicsRoute() {
     <div className="container-shell py-6 sm:py-8">
       <StudioStepperLayout
         workflow="Product Shoots"
-        title="Reference-Based Product Shoot Workflow"
-        description="Upload or link source images, tune controls, and generate refined product shoot variants."
+        title="Product Shoot Workflow"
+        description="Upload a product image, choose a use case, and generate refined ad-ready variants."
         steps={AD_STEPS}
         statuses={stepStatuses}
         currentStep={boundedStep}
         onStepSelect={(index) => setCurrentStep(index)}
         canSelectStep={(index) => {
-          if (index === 3 && !lastSuccess) {
+          if (index === 1 && !lastSuccess) {
             return false;
           }
           return canNavigateToStep(index, boundedStep, stepValidity);
         }}
-        onBack={() => setCurrentStep((step) => Math.max(step - 1, 0))}
+        onBack={() => {
+          if (boundedStep === 1) {
+            setCurrentStep(0);
+          }
+        }}
         canBack={boundedStep > 0}
         onPrimaryAction={() => {
-          if (boundedStep < 2) {
-            handleContinue();
-            return;
-          }
-          if (boundedStep === 2) {
+          if (boundedStep === 0) {
             handleGenerate();
             return;
           }
-          setCurrentStep(2);
+          setCurrentStep(0);
         }}
-        primaryActionLabel={
-          boundedStep < 2 ? "Continue" : boundedStep === 2 ? "Generate" : "Back to Controls"
-        }
-        primaryActionPendingLabel="Generating…"
-        primaryActionTone={boundedStep === 2 ? "primary" : "secondary"}
+        primaryActionLabel={boundedStep === 0 ? "Generate" : "Back to Edit"}
+        primaryActionPendingLabel="Generating\u2026"
+        primaryActionTone={boundedStep === 0 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
       >
         {renderStepContent()}

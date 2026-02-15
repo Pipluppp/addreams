@@ -1,21 +1,26 @@
 import { atom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 import type { AdGraphicsRequest, WorkflowResponse } from "../../lib/api";
+import { getPresetById } from "./presets";
 import type { AdGraphicsFormValues } from "./schema";
+
+const DEFAULT_PRESET_ID = "product-hero";
+const defaultPreset = getPresetById(DEFAULT_PRESET_ID)!;
 
 export const defaultAdGraphicsValues: AdGraphicsFormValues = {
   referenceMode: "upload",
   referenceImageUrl: "",
   referenceImageFile: null,
-  prompt: "",
-  negative_prompt: "",
+  prompt: defaultPreset.positivePromptBase,
+  negative_prompt: defaultPreset.negativePrompt,
   sizeMode: "preset",
-  sizePreset: "1328*1328",
+  sizePreset: defaultPreset.sizePreset,
   customWidth: "",
   customHeight: "",
   seed: "",
-  prompt_extend: true,
+  prompt_extend: defaultPreset.promptExtend,
   watermark: false,
+  selectedPreset: DEFAULT_PRESET_ID,
 };
 
 type AdGraphicsPersistedValues = Omit<AdGraphicsFormValues, "referenceImageFile">;
@@ -33,10 +38,11 @@ const defaultAdGraphicsPersistedValues: AdGraphicsPersistedValues = {
   seed: defaultAdGraphicsValues.seed,
   prompt_extend: defaultAdGraphicsValues.prompt_extend,
   watermark: defaultAdGraphicsValues.watermark,
+  selectedPreset: defaultAdGraphicsValues.selectedPreset,
 };
 
 const adGraphicsPersistedAtom = atomWithStorage<AdGraphicsPersistedValues>(
-  "addreams:ad-graphics:draft:v2",
+  "addreams:ad-graphics:draft:v4",
   defaultAdGraphicsPersistedValues,
 );
 
@@ -61,7 +67,7 @@ export const adGraphicsFormAtom = atom(
   },
 );
 
-export const adGraphicsStepAtom = atomWithStorage<number>("addreams:ad-graphics:step:v2", 0);
+export const adGraphicsStepAtom = atomWithStorage<number>("addreams:ad-graphics:step:v4", 0);
 
 export type AdGraphicsSuccessRecord = {
   payload: AdGraphicsRequest;
@@ -69,3 +75,10 @@ export type AdGraphicsSuccessRecord = {
 };
 
 export const adGraphicsLastSuccessAtom = atom<AdGraphicsSuccessRecord | null>(null);
+
+export type TemplateSelectionsState = Record<string, string | null>;
+
+export const adGraphicsTemplateSelectionsAtom = atomWithStorage<TemplateSelectionsState>(
+  "addreams:ad-graphics:templates:v1",
+  {},
+);

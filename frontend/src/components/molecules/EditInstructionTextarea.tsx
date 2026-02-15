@@ -6,6 +6,7 @@ type EditInstructionTextareaProps = {
   value: string;
   onChange: (next: string) => void;
   error?: string;
+  placeholder?: string;
 };
 
 export function EditInstructionTextarea({
@@ -14,6 +15,16 @@ export function EditInstructionTextarea({
   value,
   onChange,
   error,
+  placeholder,
 }: EditInstructionTextareaProps) {
-  return <PromptTextarea id={id} label={label} value={value} onChange={onChange} error={error} />;
+  return (
+    <PromptTextarea
+      id={id}
+      label={label}
+      value={value}
+      onChange={onChange}
+      error={error}
+      placeholder={placeholder}
+    />
+  );
 }
