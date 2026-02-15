@@ -23,6 +23,7 @@ export function ImageDropzone({ onFileSelected, error, buttonId }: ImageDropzone
         ref={inputRef}
         type="file"
         className="sr-only"
+        aria-label="Upload reference image"
         accept="image/jpeg,image/png,image/bmp,image/webp,image/tiff,image/gif"
         onChange={(event) => {
           const next = event.target.files?.[0];
@@ -63,7 +64,7 @@ export function ImageDropzone({ onFileSelected, error, buttonId }: ImageDropzone
           Choose file
         </button>
       </div>
-      {error ? <p className="text-xs text-error">{error}</p> : null}
+      {error ? <p className="text-xs text-error" role="alert">{error}</p> : null}
     </div>
   );
 }

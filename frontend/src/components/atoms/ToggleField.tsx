@@ -1,4 +1,4 @@
-import { Switch } from "@heroui/react";
+import { Description, Label, Switch } from "@heroui/react";
 import { cn } from "../../lib/cn";
 
 type ToggleFieldProps = {
@@ -13,7 +13,6 @@ type ToggleFieldProps = {
   isDisabled?: boolean;
   name?: string;
   value?: string;
-  "aria-label"?: string;
 };
 
 export function ToggleField({
@@ -28,7 +27,6 @@ export function ToggleField({
   isDisabled,
   name,
   value,
-  "aria-label": ariaLabel,
 }: ToggleFieldProps) {
   return (
     <Switch
@@ -39,13 +37,12 @@ export function ToggleField({
       defaultSelected={defaultChecked}
       onChange={onChange}
       isDisabled={isDisabled ?? disabled}
-      aria-label={ariaLabel ?? label}
       className={cn("switch", className)}
     >
-      <span className="flex flex-col gap-1">
-        <span className="font-medium text-ink">{label}</span>
-        {helperText ? <span className="text-xs text-ink-muted">{helperText}</span> : null}
-      </span>
+      <div className="flex flex-col gap-1">
+        <Label className="font-medium text-ink">{label}</Label>
+        {helperText ? <Description className="text-xs text-ink-muted">{helperText}</Description> : null}
+      </div>
       <Switch.Control className="switch__control">
         <Switch.Thumb className="switch__thumb" />
       </Switch.Control>

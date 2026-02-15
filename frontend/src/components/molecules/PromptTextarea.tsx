@@ -1,4 +1,4 @@
-import { FieldError, Label, TextArea, TextField as HeroTextField } from "@heroui/react";
+import { Description, FieldError, Label, TextArea, TextField as HeroTextField } from "@heroui/react";
 import { MAX_PROMPT_LENGTH } from "../../features/parameters/constants";
 import { cn } from "../../lib/cn";
 
@@ -35,9 +35,9 @@ export function PromptTextarea({
       />
       <div className="flex items-center justify-between gap-2">
         {error ? <FieldError>{error}</FieldError> : <span />}
-        <span className={cn("text-xs tabular-nums", warning ? "text-warning" : "text-ink-muted")}>
+        <Description className={cn("text-xs tabular-nums", warning ? "text-warning" : "text-ink-muted")}>
           {length}/{MAX_PROMPT_LENGTH}
-        </span>
+        </Description>
       </div>
     </HeroTextField>
   );
