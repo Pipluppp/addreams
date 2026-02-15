@@ -9,6 +9,11 @@ type StudioStep = {
   label: string;
 };
 
+type DemoGuideConfig = {
+  color: "orange" | "blue";
+  variant: "product-shoot" | "ad-graphics";
+};
+
 type StudioStepperLayoutProps = {
   workflow: string;
   title: string;
@@ -26,6 +31,7 @@ type StudioStepperLayoutProps = {
   primaryActionTone?: "primary" | "secondary";
   isPrimaryPending?: boolean;
   isPrimaryDisabled?: boolean;
+  demoGuide?: DemoGuideConfig;
   children: ReactNode;
 };
 
@@ -46,6 +52,7 @@ export function StudioStepperLayout({
   primaryActionTone = "primary",
   isPrimaryPending = false,
   isPrimaryDisabled = false,
+  demoGuide,
   children,
 }: StudioStepperLayoutProps) {
   return (
@@ -57,6 +64,7 @@ export function StudioStepperLayout({
           description={description}
           currentStep={currentStep}
           totalSteps={steps.length}
+          demoGuide={demoGuide}
         />
         <ProgressStepper
           steps={steps}

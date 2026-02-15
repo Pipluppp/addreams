@@ -566,6 +566,7 @@ export default function AdGraphicsRoute() {
         workflow="Product Shoots"
         title="Product Shoot Workflow"
         description="Upload a product image, choose a use case, and generate refined ad-ready variants."
+        demoGuide={{ color: "orange", variant: "product-shoot" }}
         steps={AD_STEPS}
         statuses={stepStatuses}
         currentStep={boundedStep}

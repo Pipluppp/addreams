@@ -10,7 +10,7 @@ export const OUTPUT_FORMATS = ["png", "jpg"] as const;
 
 export const DEFAULT_SIZE_PRESET = "1328*1328" as const;
 
-export const MAX_PROMPT_LENGTH = 500;
+export const MAX_PROMPT_LENGTH = 800;
 export const MAX_NEGATIVE_PROMPT_LENGTH = 500;
 
 export const MIN_SEED_VALUE = 0;

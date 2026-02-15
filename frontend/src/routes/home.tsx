@@ -1,40 +1,11 @@
 import { Link } from "react-router-dom";
 import { Card } from "@heroui/react";
 
-const capabilityCards = [
-  {
-    title: "Text-to-Image Ad Graphics",
-    body: "Generate campaign-ready visuals directly from a creative brief with clean, structured controls.",
-    image: "/mvp/text-to-product.png",
-    width: 2874,
-    height: 1618,
-    accent: "primary" as const,
-  },
-  {
-    title: "Reference-Based Product Shoots",
-    body: "Upload or link a product image and direct exact edits for rapid shoot-style iteration.",
-    image: "/mvp/product-reference-shoot.png",
-    width: 2854,
-    height: 1617,
-    accent: "secondary" as const,
-  },
-  {
-    title: "Step-Gated Workflows",
-    body: "Progressive, validated steps keep teams focused on quality while preserving every draft edit.",
-    image: "/mvp/product-reference-social.png",
-    width: 2474,
-    height: 1515,
-    accent: "highlight" as const,
-  },
-  {
-    title: "Model-Compatible Parameters",
-    body: "Requests stay structured and consistent from first draft to final iteration.",
-    image: "/mvp/text-to-product.png",
-    width: 2874,
-    height: 1618,
-    accent: "primary" as const,
-  },
-] as const;
+const LAMP_PROMPT =
+  "Graphic design layout for a social media ad featuring the provided IKEA BL\u00c5SVERK lamp. Center the lamp as the hero product. Place a large, crisp, perfect white circle directly behind the lamp\u2026";
+
+const COOKIE_PROMPT =
+  "A hyper-realistic, high-speed commercial food photograph of a thick, gourmet chocolate chip cookie being dunked into a glass of cold milk. Captured at the exact moment of impact\u2026";
 
 const proofStats = [
   { label: "Workflow States", value: "6-Step Guided" },
@@ -132,43 +103,149 @@ export default function HomeRoute() {
       </section>
 
       <section className="container-shell py-10 sm:py-14">
-        <div className="mb-6 space-y-2">
+        <div className="mb-8 space-y-2">
           <p className="accent-type text-xs uppercase tracking-[0.18em] text-ink-muted">
             Capabilities
           </p>
           <h2 className="section-title text-ink">
-            Product and Ad Graphics features built for conversion teams.
+            Two creative flows, each purpose-built for conversion teams.
           </h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {capabilityCards.map((card) => (
-            <Card key={card.title} className="space-y-3 p-4">
-              <img
-                src={card.image}
-                alt={card.title}
-                width={card.width}
-                height={card.height}
-                loading="lazy"
-                decoding="async"
-                className="h-48 w-full object-cover sm:h-56"
-              />
-              <div className="space-y-2">
-                <h3 className="ui-title text-ink">{card.title}</h3>
-                <p className="text-sm text-ink-soft">{card.body}</p>
+
+        <div className="grid gap-6">
+          {/* Product Shoots Flow */}
+          <Card className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex rounded-xl bg-orange-500/10 px-3 py-1 text-xs text-orange-400">
+                  <span className="accent-type uppercase tracking-[0.14em]">Product Shoots</span>
+                </div>
+                <h3 className="ui-title text-ink">Reference-Based Product Shoots</h3>
+                <p className="max-w-[52ch] text-sm text-ink-soft">
+                  Upload or link a product image, write a shoot direction, and generate ad-ready
+                  variants with precise edits.
+                </p>
               </div>
-              <div
-                className={
-                  card.accent === "primary"
-                    ? "inline-flex rounded-xl bg-accent-primary px-3 py-1 text-xs text-on-primary"
-                    : card.accent === "secondary"
-                      ? "inline-flex rounded-xl bg-accent-secondary px-3 py-1 text-xs text-on-secondary"
-                      : "inline-flex rounded-xl bg-accent-highlight px-3 py-1 text-xs text-on-highlight"
-                }
+              <Link
+                to="/product-shoots"
+                className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
               >
-                <span className="accent-type uppercase tracking-[0.14em]">Workflow Proof</span>
+                Try Product Shoots
+              </Link>
+            </div>
+
+            <div className="grid items-start gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
+              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  1. Input Image
+                </p>
+                <img
+                  src="/demo_guide/product-shoot/lamp_input.jpg"
+                  alt="Lamp product input"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-auto max-h-52 w-full object-contain rounded-lg"
+                />
               </div>
-            </Card>
-          ))}
+
+              <div className="hidden items-center self-stretch text-ink-muted md:flex">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div className="flex justify-center text-ink-muted md:hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14m0 0l-5-5m5 5l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  2. Prompt
+                </p>
+                <p className="text-xs leading-relaxed text-ink-soft">{LAMP_PROMPT}</p>
+              </div>
+
+              <div className="hidden items-center self-stretch text-ink-muted md:flex">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div className="flex justify-center text-ink-muted md:hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14m0 0l-5-5m5 5l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  3. Generated Output
+                </p>
+                <img
+                  src="/demo_guide/product-shoot/lamp_generated.png"
+                  alt="Lamp generated ad"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-auto max-h-52 w-full object-contain rounded-lg"
+                />
+              </div>
+            </div>
+          </Card>
+
+          {/* Ad Graphics Flow */}
+          <Card className="space-y-5 p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex rounded-xl bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
+                  <span className="accent-type uppercase tracking-[0.14em]">Ad Graphics</span>
+                </div>
+                <h3 className="ui-title text-ink">Text-to-Image Ad Graphics</h3>
+                <p className="max-w-[52ch] text-sm text-ink-soft">
+                  Describe your ad graphic in a prompt, pick size and format, then generate
+                  campaign-ready visuals directly.
+                </p>
+              </div>
+              <Link
+                to="/ad-graphics"
+                className="button button--secondary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+              >
+                Try Ad Graphics
+              </Link>
+            </div>
+
+            <div className="grid items-start gap-3 md:grid-cols-[1fr_auto_1fr]">
+              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  1. Prompt
+                </p>
+                <p className="text-xs leading-relaxed text-ink-soft">{COOKIE_PROMPT}</p>
+              </div>
+
+              <div className="hidden items-center self-stretch text-ink-muted md:flex">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div className="flex justify-center text-ink-muted md:hidden">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M12 5v14m0 0l-5-5m5 5l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+
+              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
+                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                  2. Generated Output
+                </p>
+                <img
+                  src="/demo_guide/ad-graphics/cookie.png"
+                  alt="Cookie ad graphic"
+                  loading="lazy"
+                  decoding="async"
+                  className="h-auto max-h-52 w-full object-contain rounded-lg"
+                />
+              </div>
+            </div>
+          </Card>
         </div>
       </section>
 

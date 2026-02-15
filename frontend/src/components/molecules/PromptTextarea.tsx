@@ -11,7 +11,7 @@ type PromptTextareaProps = {
   placeholder?: string;
 };
 
-const SOFT_WARNING_THRESHOLD = 420;
+const SOFT_WARNING_THRESHOLD = 670;
 
 export function PromptTextarea({
   id,

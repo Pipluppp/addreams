@@ -4,8 +4,8 @@ import { NavLink, Outlet } from "react-router-dom";
 import { cn } from "../../lib/cn";
 
 const navItems = [
-  { to: "/product-shoots", label: "Product Shoots" },
-  { to: "/ad-graphics", label: "Ad Graphics" },
+  { to: "/product-shoots", label: "Product Shoots", tint: "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20" },
+  { to: "/ad-graphics", label: "Ad Graphics", tint: "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" },
 ];
 
 export function AppShellLayout() {
@@ -60,8 +60,8 @@ export function AppShellLayout() {
                         to={item.to}
                         className={({ isActive }) =>
                           cn(
-                            "bg-surface px-3 py-2 text-sm transition-colors duration-200",
-                            isActive ? "text-accent-primary" : "text-ink-soft",
+                            "rounded-xl px-3 py-2 text-sm transition-colors duration-200",
+                            item.tint,
                           )
                         }
                         onClick={() => setMenuOpen(false)}
@@ -81,8 +81,8 @@ export function AppShellLayout() {
                   to={item.to}
                   className={({ isActive }) =>
                     cn(
-                      "px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors duration-200",
-                      isActive ? "text-accent-primary" : "text-ink-soft hover:text-accent-primary",
+                      "rounded-xl px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors duration-200",
+                      item.tint,
                     )
                   }
                 >

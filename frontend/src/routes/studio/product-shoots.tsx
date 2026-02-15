@@ -265,6 +265,7 @@ export default function ProductShootsRoute() {
         workflow="Ad Graphics"
         title="Text-to-Image Ad Graphic"
         description="Describe your ad graphic, choose size and format, then generate."
+        demoGuide={{ color: "blue", variant: "ad-graphics" }}
         steps={PRODUCT_STEPS}
         statuses={stepStatuses}
         currentStep={boundedStep}
