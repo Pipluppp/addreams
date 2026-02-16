@@ -9,14 +9,21 @@
     "typecheck": "tsc --noEmit",
     "cf:check": "wrangler deploy --dry-run",
     "cf:types": "wrangler types",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply addreams-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply addreams-db --remote"
   },
   "dependencies": {
+    "better-auth": "^1.4.18",
+    "drizzle-orm": "^0.45.1",
     "hono": "^4.11.9",
     "zod": "^4.1.11"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260212.0",
+    "@types/node": "^25.2.3",
+    "drizzle-kit": "^0.31.9",
     "typescript": "^5.9.3",
     "wrangler": "^4.64.0"
   }
