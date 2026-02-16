@@ -73,6 +73,10 @@ export type WorkflowSuccessResponse = {
     images: WorkflowOutputImage[];
     expiresInHours: number;
   };
+  credits: {
+    productShoots: number;
+    adGraphics: number;
+  };
   usage?: {
     imageCount?: number;
     width?: number;
@@ -84,6 +88,10 @@ export type WorkflowLegacyStubResponse = {
   workflow: "image-from-text" | "image-from-reference" | "video-from-reference";
   status: "stub";
   requestId: string;
+  credits?: {
+    productShoots: number;
+    adGraphics: number;
+  };
   receivedAt?: string;
 };
 
@@ -123,12 +131,14 @@ type HonoErrorPayload = {
 export class ApiError extends Error {
   readonly status: number;
   readonly detail?: string;
+  readonly code?: string;
 
-  constructor(message: string, status: number, detail?: string) {
+  constructor(message: string, status: number, detail?: string, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.detail = detail;
+    this.code = code;
   }
 }
 
@@ -146,6 +156,7 @@ function normalizeError(status: number, payload: unknown): ApiError {
     }
 
     if (isObject(data.error)) {
+      const code = typeof data.error.code === "string" ? data.error.code : undefined;
       const message =
         (typeof data.error.message === "string" ? data.error.message : undefined) ??
         data.message ??
@@ -163,7 +174,7 @@ function normalizeError(status: number, payload: unknown): ApiError {
         .filter(Boolean)
         .join(" ");
 
-      return new ApiError(message, status, details || data.detail);
+      return new ApiError(message, status, details || data.detail, code);
     }
 
     const message = data.message || `Request failed with ${status}`;

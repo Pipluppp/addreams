@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 // -- better-auth core tables --
@@ -69,3 +69,26 @@ export const userProfile = sqliteTable("user_profile", {
     .notNull()
     .default(sql`(unixepoch())`),
 });
+
+export const creditLedger = sqliteTable(
+  "credit_ledger",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    workflow: text("workflow", {
+      enum: ["image-from-text", "image-from-reference", "video-from-reference"],
+    }).notNull(),
+    delta: integer("delta").notNull(),
+    reason: text("reason").notNull(),
+    generationId: text("generation_id"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("credit_ledger_user_created_idx").on(table.userId, table.createdAt),
+    index("credit_ledger_workflow_created_idx").on(table.workflow, table.createdAt),
+  ],
+);

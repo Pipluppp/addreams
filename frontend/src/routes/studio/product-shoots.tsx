@@ -1,6 +1,7 @@
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import { Button, Card, Disclosure } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, Button, Card, Disclosure } from "@heroui/react";
 import { NegativePromptTextarea } from "../../components/molecules/NegativePromptTextarea";
 import { OutputFormatSelect } from "../../components/molecules/OutputFormatSelect";
 import { PromptTextarea } from "../../components/molecules/PromptTextarea";
@@ -16,8 +17,14 @@ import {
 } from "../../features/product-shoots/state";
 import { useProductShootsMutation } from "../../features/product-shoots/use-product-shoots-mutation";
 import { focusFirstError } from "../../lib/focus-first-error";
-import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
+import {
+  ApiError,
+  getWorkflowOutputImages,
+  isWorkflowCompletedResponse,
+  type WorkflowResponse,
+} from "../../lib/api";
 import { useSession } from "../../lib/auth-client";
+import { fetchMe, meQueryKey, type MeResponse } from "../../lib/me";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 import {
   validateProductShootsForm,
@@ -57,6 +64,12 @@ export default function ProductShootsRoute() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const mutation = useProductShootsMutation();
   const { data: session, isPending: isSessionPending } = useSession();
+  const queryClient = useQueryClient();
+  const { data: profileData, isPending: isProfilePending } = useQuery({
+    queryKey: meQueryKey,
+    queryFn: fetchMe,
+    enabled: !!session,
+  });
 
   const boundedStep = Math.max(0, Math.min(PRODUCT_STEPS.length - 1, currentStep));
   useEffect(() => {
@@ -70,9 +83,12 @@ export default function ProductShootsRoute() {
     validateProductStep(index, validation.errors, Boolean(lastSuccess)),
   );
   const stepStatuses = deriveStepStatuses(boundedStep, stepValidity);
+  const remainingCredits = profileData?.profile.creditsProductShoots ?? 0;
+  const isOutOfCredits = !isProfilePending && remainingCredits <= 0;
+  const hasLowCredits = !isProfilePending && remainingCredits === 1;
 
   function handleGenerate() {
-    if (isSessionPending || !session) {
+    if (isSessionPending || !session || isProfilePending || isOutOfCredits) {
       return;
     }
 
@@ -89,8 +105,13 @@ export default function ProductShootsRoute() {
       onSuccess: (result) => {
         setLastSuccess(result);
         setCurrentStep(1);
+        syncCredits(queryClient, result.response, profileData);
       },
       onError: (error) => {
+        if (error instanceof ApiError && error.code === "OUT_OF_CREDITS") {
+          setSubmitError("You are out of Product Shoots credits. Please upgrade to continue.");
+          return;
+        }
         setSubmitError(error instanceof Error ? error.message : "Request failed.");
       },
     });
@@ -104,6 +125,26 @@ export default function ProductShootsRoute() {
     if (boundedStep === 0) {
       return (
         <Card className="space-y-5 bg-surface-alt p-5 sm:p-6">
+          {isOutOfCredits ? (
+            <Alert status="danger">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Out of credits</Alert.Title>
+                <Alert.Description>
+                  Product Shoots credits are exhausted. Upgrade to continue generating.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          ) : hasLowCredits ? (
+            <Alert status="warning">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Low credits</Alert.Title>
+                <Alert.Description>{remainingCredits} Product Shoots credit remaining.</Alert.Description>
+              </Alert.Content>
+            </Alert>
+          ) : null}
+
           {/* Prompt */}
           <div className="space-y-3 rounded-xl bg-canvas p-5">
             <PromptTextarea
@@ -299,10 +340,29 @@ export default function ProductShootsRoute() {
         primaryActionPendingLabel="Generating\u2026"
         primaryActionTone={boundedStep === 0 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
-        isPrimaryDisabled={boundedStep === 0 && (isSessionPending || !session)}
+        isPrimaryDisabled={boundedStep === 0 && (isSessionPending || !session || isProfilePending || isOutOfCredits)}
       >
         {renderStepContent()}
       </StudioStepperLayout>
     </div>
   );
+}
+
+function syncCredits(
+  queryClient: ReturnType<typeof useQueryClient>,
+  response: WorkflowResponse,
+  current: MeResponse | undefined,
+) {
+  if (!isWorkflowCompletedResponse(response) || !current) {
+    return;
+  }
+
+  queryClient.setQueryData<MeResponse>(meQueryKey, {
+    ...current,
+    profile: {
+      ...current.profile,
+      creditsProductShoots: response.credits.productShoots,
+      creditsAdGraphics: response.credits.adGraphics,
+    },
+  });
 }

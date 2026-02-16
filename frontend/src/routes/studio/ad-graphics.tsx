@@ -1,6 +1,7 @@
 import { useAtom } from "jotai";
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Disclosure } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Alert, Button, Card, Disclosure } from "@heroui/react";
 import { TextField } from "../../components/atoms/TextField";
 import { ToggleField } from "../../components/atoms/ToggleField";
 import { GuidanceCallout } from "../../components/atoms/GuidanceCallout";
@@ -42,8 +43,14 @@ import {
   validateReferenceImageFile,
   type ImageDimensions,
 } from "../../lib/image-validation";
-import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
+import {
+  ApiError,
+  getWorkflowOutputImages,
+  isWorkflowCompletedResponse,
+  type WorkflowResponse,
+} from "../../lib/api";
 import { useSession } from "../../lib/auth-client";
+import { fetchMe, meQueryKey, type MeResponse } from "../../lib/me";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 
 const AD_STEPS = [
@@ -112,6 +119,12 @@ export default function AdGraphicsRoute() {
   const [templatesExpanded, setTemplatesExpanded] = useState(false);
   const mutation = useAdGraphicsMutation();
   const { data: session, isPending: isSessionPending } = useSession();
+  const queryClient = useQueryClient();
+  const { data: profileData, isPending: isProfilePending } = useQuery({
+    queryKey: meQueryKey,
+    queryFn: fetchMe,
+    enabled: !!session,
+  });
 
   useEffect(() => {
     if (formValues.referenceMode !== "upload" || !formValues.referenceImageFile) {
@@ -142,6 +155,9 @@ export default function AdGraphicsRoute() {
     validateAdStep(index, validation.errors, Boolean(lastSuccess)),
   );
   const stepStatuses = deriveStepStatuses(boundedStep, stepValidity);
+  const remainingCredits = profileData?.profile.creditsAdGraphics ?? 0;
+  const isOutOfCredits = !isProfilePending && remainingCredits <= 0;
+  const hasLowCredits = !isProfilePending && remainingCredits === 1;
 
   const previewUrl =
     formValues.referenceMode === "url"
@@ -167,7 +183,7 @@ export default function AdGraphicsRoute() {
   const hasAugmentation = effectiveNegativePrompt !== formValues.negative_prompt.trim();
 
   function handleGenerate() {
-    if (isSessionPending || !session) {
+    if (isSessionPending || !session || isProfilePending || isOutOfCredits) {
       return;
     }
 
@@ -184,8 +200,13 @@ export default function AdGraphicsRoute() {
       onSuccess: (result) => {
         setLastSuccess(result);
         setCurrentStep(1);
+        syncCredits(queryClient, result.response, profileData);
       },
       onError: (error) => {
+        if (error instanceof ApiError && error.code === "OUT_OF_CREDITS") {
+          setSubmitError("You are out of Ad Graphics credits. Please upgrade to continue.");
+          return;
+        }
         setSubmitError(error instanceof Error ? error.message : "Request failed.");
       },
     });
@@ -245,6 +266,26 @@ export default function AdGraphicsRoute() {
     if (boundedStep === 0) {
       return (
         <Card className="space-y-5 bg-surface-alt p-5 sm:p-6">
+          {isOutOfCredits ? (
+            <Alert status="danger">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Out of credits</Alert.Title>
+                <Alert.Description>
+                  Ad Graphics credits are exhausted. Upgrade to continue generating.
+                </Alert.Description>
+              </Alert.Content>
+            </Alert>
+          ) : hasLowCredits ? (
+            <Alert status="warning">
+              <Alert.Indicator />
+              <Alert.Content>
+                <Alert.Title>Low credits</Alert.Title>
+                <Alert.Description>{remainingCredits} Ad Graphics credit remaining.</Alert.Description>
+              </Alert.Content>
+            </Alert>
+          ) : null}
+
           {/* Reference Image Section */}
           <div className="space-y-3 rounded-xl bg-canvas p-5">
             <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
@@ -600,10 +641,31 @@ export default function AdGraphicsRoute() {
         primaryActionPendingLabel="Generating\u2026"
         primaryActionTone={boundedStep === 0 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
-        isPrimaryDisabled={boundedStep === 0 && (isSessionPending || !session)}
+        isPrimaryDisabled={
+          boundedStep === 0 && (isSessionPending || !session || isProfilePending || isOutOfCredits)
+        }
       >
         {renderStepContent()}
       </StudioStepperLayout>
     </div>
   );
+}
+
+function syncCredits(
+  queryClient: ReturnType<typeof useQueryClient>,
+  response: WorkflowResponse,
+  current: MeResponse | undefined,
+) {
+  if (!isWorkflowCompletedResponse(response) || !current) {
+    return;
+  }
+
+  queryClient.setQueryData<MeResponse>(meQueryKey, {
+    ...current,
+    profile: {
+      ...current.profile,
+      creditsProductShoots: response.credits.productShoots,
+      creditsAdGraphics: response.credits.adGraphics,
+    },
+  });
 }

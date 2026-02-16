@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
-import { eq } from "drizzle-orm";
 import {
   DashScopeRequestError,
   callDashScopeGeneration,
@@ -14,7 +13,13 @@ import {
 } from "./lib/workflow-validation";
 import { createAuth } from "./auth";
 import { createDb } from "./db";
-import * as schema from "./db/schema";
+import {
+  ensureUserProfile,
+  refundCredit,
+  reserveCredit,
+  type CreditBalance,
+  type CreditWorkflow,
+} from "./lib/credits";
 
 type Bindings = WorkerBindings & {
   DB: D1Database;
@@ -94,18 +99,7 @@ async function requireAuth(c: Context<{ Bindings: Bindings; Variables: Variables
 app.get("/api/me", requireAuth, async (c) => {
   const user = c.get("user");
   const db = createDb(c.env.DB);
-
-  let profile = await db.query.userProfile.findFirst({
-    where: eq(schema.userProfile.userId, user.id),
-  });
-
-  if (!profile) {
-    const [created] = await db
-      .insert(schema.userProfile)
-      .values({ userId: user.id })
-      .returning();
-    profile = created;
-  }
+  const profile = await ensureUserProfile(db, user.id);
 
   return c.json({ user, profile });
 });
@@ -114,6 +108,8 @@ app.use("/api/workflows/*", requireAuth);
 
 app.post("/api/workflows/image-from-text", async (context) => {
   const requestId = crypto.randomUUID();
+  const user = context.get("user");
+  const db = createDb(context.env.DB);
   const body = await parseJsonBody(context);
   if (!body.success) {
     return validationError(context, requestId, "Invalid JSON payload.");
@@ -127,6 +123,17 @@ app.post("/api/workflows/image-from-text", async (context) => {
   const config = resolveQwenConfig(context.env);
   if (!config.success) {
     return backendConfigError(context, requestId, config.message);
+  }
+
+  const creditReservation = await reserveCredit({
+    db,
+    d1: context.env.DB,
+    userId: user.id,
+    workflow: "image-from-text",
+  });
+
+  if (!creditReservation.success) {
+    return outOfCreditsError(context, requestId, creditReservation.balance);
   }
 
   try {
@@ -156,7 +163,12 @@ app.post("/api/workflows/image-from-text", async (context) => {
 
     const urls = extractImageUrls(providerResponse.payload);
     if (urls.length === 0) {
-      return upstreamMalformedError(context, requestId, providerResponse.providerRequestId);
+      throw new DashScopeRequestError({
+        status: 502,
+        backendCode: "UPSTREAM_MALFORMED_RESPONSE",
+        message: "Image provider returned an invalid response body.",
+        providerRequestId: providerResponse.providerRequestId,
+      });
     }
 
     return context.json(
@@ -167,16 +179,26 @@ app.post("/api/workflows/image-from-text", async (context) => {
         providerPayload: providerResponse.payload,
         providerRequestId: providerResponse.providerRequestId,
         images: urls,
+        credits: creditReservation.balance,
       }),
       200,
     );
   } catch (error) {
+    await safelyRefundCredit({
+      db,
+      d1: context.env.DB,
+      userId: user.id,
+      workflow: "image-from-text",
+      requestId,
+    });
     return handleWorkflowError(context, requestId, error);
   }
 });
 
 app.post("/api/workflows/image-from-reference", async (context) => {
   const requestId = crypto.randomUUID();
+  const user = context.get("user");
+  const db = createDb(context.env.DB);
   const body = await parseJsonBody(context);
   if (!body.success) {
     return validationError(context, requestId, "Invalid JSON payload.");
@@ -190,6 +212,17 @@ app.post("/api/workflows/image-from-reference", async (context) => {
   const config = resolveQwenConfig(context.env);
   if (!config.success) {
     return backendConfigError(context, requestId, config.message);
+  }
+
+  const creditReservation = await reserveCredit({
+    db,
+    d1: context.env.DB,
+    userId: user.id,
+    workflow: "image-from-reference",
+  });
+
+  if (!creditReservation.success) {
+    return outOfCreditsError(context, requestId, creditReservation.balance);
   }
 
   try {
@@ -227,7 +260,12 @@ app.post("/api/workflows/image-from-reference", async (context) => {
 
     const urls = extractImageUrls(providerResponse.payload);
     if (urls.length === 0) {
-      return upstreamMalformedError(context, requestId, providerResponse.providerRequestId);
+      throw new DashScopeRequestError({
+        status: 502,
+        backendCode: "UPSTREAM_MALFORMED_RESPONSE",
+        message: "Image provider returned an invalid response body.",
+        providerRequestId: providerResponse.providerRequestId,
+      });
     }
 
     return context.json(
@@ -238,15 +276,26 @@ app.post("/api/workflows/image-from-reference", async (context) => {
         providerPayload: providerResponse.payload,
         providerRequestId: providerResponse.providerRequestId,
         images: urls,
+        credits: creditReservation.balance,
       }),
       200,
     );
   } catch (error) {
+    await safelyRefundCredit({
+      db,
+      d1: context.env.DB,
+      userId: user.id,
+      workflow: "image-from-reference",
+      requestId,
+    });
     return handleWorkflowError(context, requestId, error);
   }
 });
 
 app.post("/api/workflows/video-from-reference", async (context) => {
+  const requestId = crypto.randomUUID();
+  const user = context.get("user");
+  const db = createDb(context.env.DB);
   const body = await parseJsonBody(context);
   if (!body.success) {
     return context.json({ error: "Invalid JSON payload" }, 400);
@@ -260,7 +309,18 @@ app.post("/api/workflows/video-from-reference", async (context) => {
     return context.json({ error: "prompt and referenceImageUrl are required" }, 400);
   }
 
-  return stubResponse(context, "video-from-reference");
+  const creditReservation = await reserveCredit({
+    db,
+    d1: context.env.DB,
+    userId: user.id,
+    workflow: "video-from-reference",
+  });
+
+  if (!creditReservation.success) {
+    return outOfCreditsError(context, requestId, creditReservation.balance);
+  }
+
+  return stubResponse(context, "video-from-reference", creditReservation.balance);
 });
 
 app.onError((_error, context) => {
@@ -286,6 +346,7 @@ function successPayload(args: {
   providerPayload: unknown;
   providerRequestId?: string;
   images: string[];
+  credits: CreditBalance;
 }) {
   const usage = parseUsage(args.providerPayload);
   const providerRequestId =
@@ -305,6 +366,7 @@ function successPayload(args: {
       images: args.images.map((url) => ({ url })),
       expiresInHours: EXPIRES_IN_HOURS,
     },
+    credits: args.credits,
     ...(usage ? { usage } : {}),
   };
 }
@@ -411,6 +473,20 @@ function unauthorizedError(context: Context) {
   );
 }
 
+function outOfCreditsError(context: Context, requestId: string, balance: CreditBalance) {
+  return context.json(
+    {
+      error: {
+        code: "OUT_OF_CREDITS",
+        message: "You do not have credits remaining for this workflow.",
+      },
+      requestId,
+      credits: balance,
+    },
+    402,
+  );
+}
+
 function backendConfigError(context: Context, requestId: string, message: string) {
   return context.json(
     {
@@ -421,20 +497,6 @@ function backendConfigError(context: Context, requestId: string, message: string
       requestId,
     } satisfies NormalizedError,
     500,
-  );
-}
-
-function upstreamMalformedError(context: Context, requestId: string, providerRequestId?: string) {
-  return context.json(
-    {
-      error: {
-        code: "UPSTREAM_MALFORMED_RESPONSE",
-        message: "Image provider returned an invalid response body.",
-        ...(providerRequestId ? { providerRequestId } : {}),
-      },
-      requestId,
-    } satisfies NormalizedError,
-    502,
   );
 }
 
@@ -451,16 +513,41 @@ async function parseJsonBody(context: Context): Promise<{ success: true; data: u
   }
 }
 
-function stubResponse(context: Context, workflow: WorkflowName) {
+function stubResponse(context: Context, workflow: WorkflowName, credits: CreditBalance) {
   return context.json(
     {
       workflow,
       status: "stub",
       requestId: crypto.randomUUID(),
+      credits,
       receivedAt: new Date().toISOString(),
     },
     202,
   );
+}
+
+async function safelyRefundCredit(args: {
+  db: ReturnType<typeof createDb>;
+  d1: D1Database;
+  userId: string;
+  workflow: CreditWorkflow;
+  requestId: string;
+}) {
+  try {
+    await refundCredit({
+      db: args.db,
+      d1: args.d1,
+      userId: args.userId,
+      workflow: args.workflow,
+    });
+  } catch (error) {
+    console.error("credit_refund_failed", {
+      requestId: args.requestId,
+      userId: args.userId,
+      workflow: args.workflow,
+      error: error instanceof Error ? error.message : "unknown_error",
+    });
+  }
 }
 
 function readString(value: unknown): string | undefined {

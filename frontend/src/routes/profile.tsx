@@ -2,17 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Card, Chip, Form, Input, Label, Spinner } from "@heroui/react";
-import { authBaseUrl, authClient, useSession } from "../lib/auth-client";
-
-type ProfileData = {
-  user: { id: string; name: string; email: string; image: string | null };
-  profile: {
-    userId: string;
-    accountType: "free" | "paid";
-    creditsProductShoots: number;
-    creditsAdGraphics: number;
-  };
-};
+import { authClient, useSession } from "../lib/auth-client";
+import { fetchMe, meQueryKey, type MeResponse } from "../lib/me";
 
 export default function ProfileRoute() {
   const navigate = useNavigate();
@@ -24,13 +15,9 @@ export default function ProfileRoute() {
     data: profileData,
     isPending,
     refetch,
-  } = useQuery<ProfileData>({
-    queryKey: ["me"],
-    queryFn: async () => {
-      const res = await fetch(`${authBaseUrl}/api/me`, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to load profile");
-      return res.json();
-    },
+  } = useQuery<MeResponse>({
+    queryKey: meQueryKey,
+    queryFn: fetchMe,
     enabled: !!session,
   });
 
