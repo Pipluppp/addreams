@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { RouteLoadingFrame } from "./components/molecules/RouteLoadingFrame";
 import { RequireAuth } from "./components/molecules/RequireAuth";
 import { AppShellLayout } from "./components/layouts/AppShellLayout";
+import { AuthLayout } from "./components/layouts/AuthLayout";
 
 const HomeRoute = lazy(() => import("./routes/home"));
 const ProductShootsRoute = lazy(() => import("./routes/studio/product-shoots"));
@@ -49,7 +50,6 @@ export default function App() {
               "Loading history…",
             )}
           />
-          <Route path="login" element={withSuspense(<LoginRoute />, "Loading…")} />
           <Route
             path="profile"
             element={withSuspense(
@@ -63,6 +63,9 @@ export default function App() {
           <Route path="studio/product-shoots" element={<Navigate to="/product-shoots" replace />} />
           <Route path="studio/ad-graphics" element={<Navigate to="/ad-graphics" replace />} />
           <Route path="*" element={withSuspense(<NotFoundRoute />, "Loading page…")} />
+        </Route>
+        <Route element={<AuthLayout />}>
+          <Route path="login" element={withSuspense(<LoginRoute />, "Loading…")} />
         </Route>
       </Routes>
     </BrowserRouter>

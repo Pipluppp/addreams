@@ -1,67 +1,67 @@
-# Step 04: Auth UX and Profile Plan Sketch
+# Step 04: Auth UX and Profile Implementation Update
+
+## Status
+
+Implemented on February 17, 2026.
 
 ## Goal
 
-Improve `/login`, sign-up clarity, and `/profile` usability while keeping current email/password auth flow stable.
+Improve `/login` and `/profile` UX while keeping current email/password auth flow stable.
 
-## Current Gap
+## Implemented Changes
 
-- Login and create-account work, but UX can be clearer and more robust.
-- Profile page is functional but minimal.
+### Routing and Layout
 
-## Scope
+- `/login` now renders in a dedicated auth layout and is no longer nested under `AppShellLayout`.
+- Auth page has a separate shell (brand + home link), with no app sidebar/footer chrome.
 
-- Frontend: auth screens, profile polish, better states/errors, loading and feedback mechanics (sign up confirm is just some change on the navbar, no oading, etc.)
-- Backend: minor API support only where needed.
+### Login and Sign-Up UX
 
-## Analysis Inputs Accounted For
+- Kept a single `/login` route with tabs (`Sign In`, `Create Account`).
+- Rebuilt auth page into a full-page experience with responsive split treatment:
+- desktop: form pane + branded visual pane
+- smaller widths: compact integrated visual treatment remains visible
+- Removed all user-facing environment diagnostics from auth UI.
+- Removed auth-page operational alerts not needed for users:
+- redirect-target notice
+- email verification warning callout
+- Removed extra descriptive copy per latest UX pass.
+- Preserved auth behavior:
+- redirect sanitization remains in place
+- sign-in success returns to redirect target (or `/`)
+- sign-up success now also returns to redirect target (or `/`)
+- Kept sign-up `name` as required.
 
-- From `2026-02-16-account-auth/analysis.md`:
-- workers.dev URL inference is useful but brittle; custom-domain deployments must rely on explicit `VITE_AUTH_BASE_URL` and `VITE_API_BASE_URL`.
-- `requireEmailVerification: false` is an intentional tradeoff; UX must avoid implying verified-email guarantees that are not yet true.
-- Generation actions must be clearly blocked when session is missing or loading.
+### Profile Simplification
 
-## Login and Sign-Up Sketch
+- Removed display-name editing UI and setup-mode branch from `/profile`.
+- Profile now focuses on account overview, credits, and session sign-out controls.
 
-- Keep a single page with tabs for sign-in and create-account.
-- Add stronger validation messaging:
-- email format
-- minimum password length
-- password confirmation for sign-up
-- Add clear error mapping for common cases:
-- invalid credentials
-- account already exists
-- temporary backend failure
-- Make error copy explicit when auth fails due to missing/expired session cookies.
+### Navbar Identity
 
-## Profile Sketch
+- Logged-in navbar trigger now shows full user name.
+- Fallback order:
+- `user.name`
+- email local-part
+- full email
+- Long names are truncated to protect header layout.
 
-- Improve profile layout and sectioning.
-- Add editable fields roadmap (name now, avatar later).
-- Show account type and current credits as first-class summary cards.
-- Keep explicit sign-out and session state feedback.
+### Styling and Design-System Updates
 
-## Route and Session UX
+- Added layered low-alpha shadow utilities for smoother elevation.
+- Updated auth tabs contrast and rounded treatment.
+- Applied requested nav chip color adjustments (for example history chip).
+- Per iterative feedback, refined capabilities section visuals on home:
+- flatter structure with less nested framing
+- tokenized color treatment for product/ad panels
+- rounded media consistency and image-fit fixes
 
-- Preserve redirect behavior (`/login?redirect=...`).
-- Show loading skeletons/spinners for session checks.
-- Avoid flicker on protected routes.
-- Generation workflows are treated as protected actions:
-- signed-out users are redirected to login before generating
-- signed-in users with zero credits see clear blocked state and next-step message
-- Ensure generation fetches and auth fetches use the correct base URLs per environment configuration.
-- Add a lightweight environment checklist for local Vite, local worker, workers.dev, and custom-domain deployments.
+## Environment Guidance Policy
 
-## Acceptance Criteria
+- Runtime base URL guidance is docs-only and intentionally removed from user-facing auth screens.
+- Checklist now lives in `docs/deployment-quickstart.md`.
 
-- New user can sign up, land on setup flow, save profile, continue.
-- Returning user sign-in is one step and stable.
-- Validation and error states are user-readable and actionable.
-- Protected routes reliably redirect when unauthenticated.
-- Generation attempts never proceed when unauthenticated.
-- Auth works without URL surprises across both workers.dev and custom-domain environments when vars are correctly configured.
+## Verification
 
-## Open Decisions
-
-- Whether to split `/login` and `/sign-up` later.
-- Whether to add password strength meter now or defer.
+- `npm run typecheck -w frontend` passes.
+- `npm run build -w frontend` passes (bundle-size warning remains informational).

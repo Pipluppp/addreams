@@ -103,146 +103,123 @@ export default function HomeRoute() {
       </section>
 
       <section className="container-shell py-10 sm:py-14">
-        <div className="mb-8 space-y-2">
-          <p className="accent-type text-xs uppercase tracking-[0.18em] text-ink-muted">
-            Capabilities
+        <div className="mb-8 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div className="space-y-2">
+            <p className="accent-type text-xs uppercase tracking-[0.18em] text-ink-muted">
+              Capabilities
+            </p>
+            <h2 className="section-title text-ink">
+              Two creative flows, each purpose-built for conversion teams.
+            </h2>
+          </div>
+          <p className="max-w-[46ch] text-sm leading-relaxed text-ink-soft">
+            Flat, connected stage blocks keep context and outputs aligned, so each workflow reads
+            as one continuous system.
           </p>
-          <h2 className="section-title text-ink">
-            Two creative flows, each purpose-built for conversion teams.
-          </h2>
         </div>
 
-        <div className="grid gap-6">
-          {/* Product Shoots Flow */}
-          <Card className="space-y-5 p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="inline-flex rounded-xl bg-orange-500/10 px-3 py-1 text-xs text-orange-400">
+        <div className="grid gap-5">
+          <Card className="overflow-hidden border border-border/70 p-0 shadow-none">
+            <div className="grid gap-px bg-border/70 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.95fr)]">
+              <div className="space-y-4 bg-surface p-5 sm:p-6">
+                <div className="inline-flex rounded-xl bg-orange-500/15 px-3 py-1 text-xs text-orange-500">
                   <span className="accent-type uppercase tracking-[0.14em]">Product Shoots</span>
                 </div>
                 <h3 className="ui-title text-ink">Reference-Based Product Shoots</h3>
-                <p className="max-w-[52ch] text-sm text-ink-soft">
+                <p className="max-w-[48ch] text-sm text-ink-soft">
                   Upload or link a product image, write a shoot direction, and generate ad-ready
                   variants with precise edits.
                 </p>
-              </div>
-              <Link
-                to="/product-shoots"
-                className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
-              >
-                Try Product Shoots
-              </Link>
-            </div>
-
-            <div className="grid items-start gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
-              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  1. Input Image
-                </p>
-                <img
-                  src="/demo_guide/product-shoot/lamp_input.jpg"
-                  alt="Lamp product input"
-                  loading="lazy"
-                  decoding="async"
-                  className="h-auto max-h-52 w-full object-contain rounded-lg"
-                />
+                <Link
+                  to="/product-shoots"
+                  className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+                >
+                  Try Product Shoots
+                </Link>
               </div>
 
-              <div className="hidden items-center self-stretch text-ink-muted md:flex">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div className="flex justify-center text-ink-muted md:hidden">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M12 5v14m0 0l-5-5m5 5l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              <div className="grid gap-px bg-border/70 sm:grid-cols-3">
+                <div className="bg-canvas p-4 sm:p-5">
+                  <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    01 Input Image
+                  </p>
+                  <div className="relative mt-3 overflow-hidden rounded-[var(--radius-sm)] bg-surface ring-1 ring-border/70">
+                    <img
+                      src="/demo_guide/product-shoot/lamp_input.jpg"
+                      alt="Lamp product input"
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-square w-full rounded-[var(--radius-sm)] object-cover"
+                    />
+                  </div>
+                </div>
 
-              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  2. Prompt
-                </p>
-                <p className="text-xs leading-relaxed text-ink-soft">{LAMP_PROMPT}</p>
-              </div>
+                <div className="bg-[var(--color-accent-secondary-soft)] p-4 sm:p-5">
+                  <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    02 Prompt
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-ink-soft">{LAMP_PROMPT}</p>
+                </div>
 
-              <div className="hidden items-center self-stretch text-ink-muted md:flex">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div className="flex justify-center text-ink-muted md:hidden">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M12 5v14m0 0l-5-5m5 5l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-
-              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  3. Generated Output
-                </p>
-                <img
-                  src="/demo_guide/product-shoot/lamp_generated.png"
-                  alt="Lamp generated ad"
-                  loading="lazy"
-                  decoding="async"
-                  className="h-auto max-h-52 w-full object-contain rounded-lg"
-                />
+                <div className="bg-canvas p-4 sm:p-5">
+                  <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    03 Generated Output
+                  </p>
+                  <div className="relative mt-3 overflow-hidden rounded-[var(--radius-sm)] bg-surface ring-1 ring-border/70">
+                    <img
+                      src="/demo_guide/product-shoot/lamp_generated.png"
+                      alt="Lamp generated ad"
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-square w-full rounded-[var(--radius-sm)] object-cover"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
 
-          {/* Ad Graphics Flow */}
-          <Card className="space-y-5 p-5 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="inline-flex rounded-xl bg-blue-500/10 px-3 py-1 text-xs text-blue-400">
+          <Card className="overflow-hidden border border-border/70 p-0 shadow-none">
+            <div className="grid gap-px bg-border/70 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.95fr)]">
+              <div className="space-y-4 bg-surface p-5 sm:p-6">
+                <div className="inline-flex rounded-xl bg-blue-500/15 px-3 py-1 text-xs text-blue-500">
                   <span className="accent-type uppercase tracking-[0.14em]">Ad Graphics</span>
                 </div>
                 <h3 className="ui-title text-ink">Text-to-Image Ad Graphics</h3>
-                <p className="max-w-[52ch] text-sm text-ink-soft">
+                <p className="max-w-[48ch] text-sm text-ink-soft">
                   Describe your ad graphic in a prompt, pick size and format, then generate
                   campaign-ready visuals directly.
                 </p>
-              </div>
-              <Link
-                to="/ad-graphics"
-                className="button button--secondary rounded-2xl px-5 py-2.5 text-sm font-semibold"
-              >
-                Try Ad Graphics
-              </Link>
-            </div>
-
-            <div className="grid items-start gap-3 md:grid-cols-[1fr_auto_1fr]">
-              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  1. Prompt
-                </p>
-                <p className="text-xs leading-relaxed text-ink-soft">{COOKIE_PROMPT}</p>
+                <Link
+                  to="/ad-graphics"
+                  className="button button--secondary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+                >
+                  Try Ad Graphics
+                </Link>
               </div>
 
-              <div className="hidden items-center self-stretch text-ink-muted md:flex">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M5 12h14m0 0l-5-5m5 5l-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
-              <div className="flex justify-center text-ink-muted md:hidden">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="M12 5v14m0 0l-5-5m5 5l5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
+              <div className="grid gap-px bg-border/70 sm:grid-cols-2">
+                <div className="bg-[var(--color-accent-primary-soft)] p-4 sm:p-5">
+                  <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    01 Prompt
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-ink-soft">{COOKIE_PROMPT}</p>
+                </div>
 
-              <div className="space-y-2 rounded-xl bg-surface-alt p-4">
-                <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
-                  2. Generated Output
-                </p>
-                <img
-                  src="/demo_guide/ad-graphics/cookie.png"
-                  alt="Cookie ad graphic"
-                  loading="lazy"
-                  decoding="async"
-                  className="h-auto max-h-52 w-full object-contain rounded-lg"
-                />
+                <div className="bg-canvas p-4 sm:p-5">
+                  <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                    02 Generated Output
+                  </p>
+                  <div className="relative mt-3 overflow-hidden rounded-[var(--radius-sm)]">
+                    <img
+                      src="/demo_guide/ad-graphics/cookie.png"
+                      alt="Cookie ad graphic"
+                      loading="lazy"
+                      decoding="async"
+                      className="aspect-[4/3] w-full rounded-[var(--radius-sm)] object-cover"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </Card>

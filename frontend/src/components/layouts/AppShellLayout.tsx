@@ -7,7 +7,7 @@ import { useSession, authClient } from "../../lib/auth-client";
 const navItems = [
   { to: "/product-shoots", label: "Product Shoots", tint: "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20" },
   { to: "/ad-graphics", label: "Ad Graphics", tint: "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" },
-  { to: "/history", label: "History", tint: "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" },
+  { to: "/history", label: "History", tint: "bg-[#FFF3BF] text-ink hover:bg-[#FFE9A0]" },
 ];
 
 function getInitials(name: string | null | undefined): string {
@@ -18,6 +18,17 @@ function getInitials(name: string | null | undefined): string {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+function getUserDisplayName(name: string | null | undefined, email: string | null | undefined): string {
+  const cleanName = name?.trim();
+  if (cleanName) return cleanName;
+
+  const cleanEmail = email?.trim();
+  if (!cleanEmail) return "User";
+
+  const localPart = cleanEmail.split("@")[0]?.trim();
+  return localPart || cleanEmail;
 }
 
 function UserMenu() {
@@ -38,17 +49,21 @@ function UserMenu() {
   }
 
   const user = session.user;
+  const displayName = getUserDisplayName(user.name, user.email);
 
   return (
     <Dropdown>
-      <Button aria-label="User menu" variant="ghost" className="rounded-full p-0">
-        <Avatar className="size-8">
-          {user.image ? (
-            <Avatar.Image alt={user.name ?? "User"} src={user.image} />
-          ) : null}
-          <Avatar.Fallback>{getInitials(user.name)}</Avatar.Fallback>
-        </Avatar>
-      </Button>
+      <Dropdown.Trigger>
+        <Button aria-label="User menu" variant="ghost" className="max-w-[16rem] gap-2 rounded-2xl px-2.5 py-1.5">
+          <Avatar className="size-8 shrink-0">
+            {user.image ? (
+              <Avatar.Image alt={displayName} src={user.image} />
+            ) : null}
+            <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
+          </Avatar>
+          <span className="truncate text-xs font-semibold text-ink">{displayName}</span>
+        </Button>
+      </Dropdown.Trigger>
       <Dropdown.Popover>
         <Dropdown.Menu
           onAction={(key) => {

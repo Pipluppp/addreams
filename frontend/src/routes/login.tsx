@@ -1,8 +1,19 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Alert, Button, Card, Form, Input, Label, Skeleton, Spinner, Tabs } from "@heroui/react";
+import {
+  Alert,
+  Button,
+  Card,
+  FieldError,
+  Form,
+  Input,
+  Label,
+  Skeleton,
+  Spinner,
+  Tabs,
+  TextField,
+} from "@heroui/react";
 import { authClient, useSession } from "../lib/auth-client";
-import { resolveRuntimeConfig } from "../lib/runtime-config";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -14,13 +25,24 @@ type FieldErrors = {
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PIXEL_PATTERN = [
+  "00111000011100",
+  "01111110111110",
+  "11110111101111",
+  "11111111111111",
+  "01111111111110",
+  "00111111111100",
+  "00011111111000",
+  "00001111110000",
+  "00000111100000",
+  "00000011000000",
+] as const;
 
 export default function LoginRoute() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawRedirect = searchParams.get("redirect") ?? "/";
   const redirect = rawRedirect.startsWith("/") ? rawRedirect : "/";
-  const runtimeConfig = useMemo(() => resolveRuntimeConfig(), []);
   const { data: session, isPending: isSessionPending } = useSession();
 
   const [mode, setMode] = useState<Mode>("sign-in");
@@ -104,11 +126,6 @@ export default function LoginRoute() {
         return;
       }
 
-      if (mode === "sign-up") {
-        navigate("/profile?setup=true", { replace: true });
-        return;
-      }
-
       navigate(redirect, { replace: true });
     } catch (error) {
       setAuthError(mapAuthError(error instanceof Error ? error.message : null, mode));
@@ -126,190 +143,264 @@ export default function LoginRoute() {
 
   if (isSessionPending) {
     return (
-      <section className="container-shell flex min-h-[62vh] items-center justify-center py-10">
-        <Card className="w-full max-w-lg space-y-4 p-6">
-          <Skeleton className="h-6 w-1/2 rounded-md" />
-          <Skeleton className="h-10 w-full rounded-xl" />
-          <Skeleton className="h-10 w-full rounded-xl" />
-          <Skeleton className="h-10 w-full rounded-xl" />
-        </Card>
+      <section className="container-shell py-4 sm:py-6">
+        <div className="shadow-soft-stack grid overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-surface lg:grid-cols-[minmax(0,33rem)_1fr]">
+          <div className="space-y-3 p-4 sm:p-6">
+            <Skeleton className="h-6 w-2/5 rounded-md" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+          <div className="hidden min-h-[28rem] border-l border-border/70 bg-surface-alt lg:block" />
+        </div>
       </section>
     );
   }
 
   return (
-    <section className="container-shell flex min-h-[62vh] items-center justify-center py-10">
-      <Card className="w-full max-w-2xl space-y-5 p-5 sm:p-7">
-        <Card.Header>
-          <Card.Title>Sign in to addreams</Card.Title>
-          <Card.Description>
-            Continue to protected workflows and generation history.
-          </Card.Description>
-        </Card.Header>
+    <section className="container-shell py-4 sm:py-6">
+      <div className="shadow-soft-stack grid overflow-hidden rounded-[var(--radius-xl)] border border-border/70 bg-surface lg:min-h-[calc(100vh-12.5rem)] lg:grid-cols-[minmax(0,33rem)_1fr]">
+        <div className="flex items-center p-4 sm:p-6 lg:p-7">
+          <Card variant="transparent" className="w-full space-y-4">
+            <Card.Header>
+              <Card.Title className="text-[1.75rem] leading-tight sm:text-[2rem]">
+                {mode === "sign-in" ? "Sign in to addreams" : "Create your addreams account"}
+              </Card.Title>
+            </Card.Header>
 
-        {redirect !== "/" ? (
-          <Alert status="accent">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>Redirect target saved</Alert.Title>
-              <Alert.Description>After sign-in, you will return to {redirect}.</Alert.Description>
-            </Alert.Content>
-          </Alert>
-        ) : null}
+            {authError ? (
+              <Alert status="danger">
+                <Alert.Indicator />
+                <Alert.Content>
+                  <Alert.Title>Authentication failed</Alert.Title>
+                  <Alert.Description>{authError}</Alert.Description>
+                </Alert.Content>
+              </Alert>
+            ) : null}
 
-        {authError ? (
-          <Alert status="danger">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>Authentication failed</Alert.Title>
-              <Alert.Description>{authError}</Alert.Description>
-            </Alert.Content>
-          </Alert>
-        ) : null}
+            <Tabs
+              variant="secondary"
+              selectedKey={mode}
+              onSelectionChange={(key) => handleModeChange(String(key) as Mode)}
+            >
+              <Tabs.ListContainer>
+                <Tabs.List
+                  aria-label="Authentication mode"
+                  className="w-full rounded-[var(--radius-md)] bg-surface-alt p-1 *:flex-1 *:rounded-[var(--radius-sm)]"
+                >
+                  <Tabs.Tab
+                    id="sign-in"
+                    className="font-semibold aria-[selected=true]:text-on-primary data-[selected=true]:text-on-primary"
+                  >
+                    Sign In
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    id="sign-up"
+                    className="font-semibold aria-[selected=true]:text-on-primary data-[selected=true]:text-on-primary"
+                  >
+                    Create Account
+                  </Tabs.Tab>
+                </Tabs.List>
+              </Tabs.ListContainer>
 
-        <Tabs
-          variant="secondary"
-          selectedKey={mode}
-          onSelectionChange={(key) => handleModeChange(String(key) as Mode)}
-        >
-          <Tabs.ListContainer>
-            <Tabs.List aria-label="Authentication mode" className="w-full *:flex-1">
-              <Tabs.Tab id="sign-in">
-                Sign In
-                <Tabs.Indicator />
-              </Tabs.Tab>
-              <Tabs.Tab id="sign-up">
-                Create Account
-                <Tabs.Indicator />
-              </Tabs.Tab>
-            </Tabs.List>
-          </Tabs.ListContainer>
+              <Tabs.Panel id="sign-in" className="pt-4">
+                <Form onSubmit={handleSubmit} className="space-y-3">
+                  <AuthTextField
+                    name="email"
+                    type="email"
+                    label="Email"
+                    value={email}
+                    onChange={(nextValue) => {
+                      setEmail(nextValue);
+                      setFieldErrors((current) => ({ ...current, email: undefined }));
+                    }}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    error={fieldErrors.email}
+                  />
+                  <AuthTextField
+                    name="password"
+                    type="password"
+                    label="Password"
+                    value={password}
+                    onChange={(nextValue) => {
+                      setPassword(nextValue);
+                      setFieldErrors((current) => ({ ...current, password: undefined }));
+                    }}
+                    placeholder="Your password"
+                    autoComplete="current-password"
+                    error={fieldErrors.password}
+                  />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full"
+                    isDisabled={isSubmitDisabled}
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner color="current" size="sm" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
+                  </Button>
+                </Form>
+              </Tabs.Panel>
 
-          <Tabs.Panel id="sign-in" className="pt-4">
-            <Form onSubmit={handleSubmit} className="space-y-4">
-              <AuthTextField
-                name="email"
-                type="email"
-                label="Email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setFieldErrors((current) => ({ ...current, email: undefined }));
+              <Tabs.Panel id="sign-up" className="pt-4">
+                <Form onSubmit={handleSubmit} className="space-y-3">
+                  <AuthTextField
+                    name="name"
+                    type="text"
+                    label="Name"
+                    value={name}
+                    onChange={(nextValue) => {
+                      setName(nextValue);
+                      setFieldErrors((current) => ({ ...current, name: undefined }));
+                    }}
+                    placeholder="Your full name"
+                    autoComplete="name"
+                    error={fieldErrors.name}
+                  />
+                  <AuthTextField
+                    name="email"
+                    type="email"
+                    label="Email"
+                    value={email}
+                    onChange={(nextValue) => {
+                      setEmail(nextValue);
+                      setFieldErrors((current) => ({ ...current, email: undefined }));
+                    }}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                    error={fieldErrors.email}
+                  />
+                  <AuthTextField
+                    name="password"
+                    type="password"
+                    label="Password"
+                    value={password}
+                    onChange={(nextValue) => {
+                      setPassword(nextValue);
+                      setFieldErrors((current) => ({ ...current, password: undefined }));
+                    }}
+                    placeholder="At least 8 characters"
+                    autoComplete="new-password"
+                    error={fieldErrors.password}
+                  />
+                  <AuthTextField
+                    name="confirmPassword"
+                    type="password"
+                    label="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(nextValue) => {
+                      setConfirmPassword(nextValue);
+                      setFieldErrors((current) => ({
+                        ...current,
+                        confirmPassword: undefined,
+                      }));
+                    }}
+                    placeholder="Repeat your password"
+                    autoComplete="new-password"
+                    error={fieldErrors.confirmPassword}
+                  />
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full"
+                    isDisabled={isSubmitDisabled}
+                  >
+                    {loading ? (
+                      <>
+                        <Spinner color="current" size="sm" />
+                        Creating account...
+                      </>
+                    ) : (
+                      "Create Account"
+                    )}
+                  </Button>
+                </Form>
+              </Tabs.Panel>
+            </Tabs>
+
+            <Card
+              variant="secondary"
+              className="shadow-soft-stack relative overflow-hidden rounded-[var(--radius-lg)] border border-border/70 p-4 lg:hidden"
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--color-brand-gold) 36%, transparent), transparent 52%), radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--color-brand-blue) 28%, transparent), transparent 56%), radial-gradient(circle at 76% 86%, color-mix(in srgb, var(--color-brand-orange) 24%, transparent), transparent 58%)",
                 }}
-                placeholder="you@example.com"
-                autoComplete="email"
-                error={fieldErrors.email}
               />
-              <AuthTextField
-                name="password"
-                type="password"
-                label="Password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setFieldErrors((current) => ({ ...current, password: undefined }));
-                }}
-                placeholder="Your password"
-                autoComplete="current-password"
-                error={fieldErrors.password}
-              />
-              <Button type="submit" variant="primary" className="w-full" isDisabled={isSubmitDisabled}>
-                {loading ? (
-                  <>
-                    <Spinner color="current" size="sm" />
-                    Signing in...
-                  </>
-                ) : (
-                  "Sign In"
+              <div className="relative space-y-2">
+                <p className="accent-type text-[10px] uppercase tracking-[0.18em] text-ink-muted">
+                  Protected Workflows
+                </p>
+                <p className="text-xs text-ink-soft">
+                  Sign in to access Product Shoots, Ad Graphics, and generation history.
+                </p>
+              </div>
+              <div className="shadow-soft-stack relative mx-auto mt-4 grid w-full max-w-[14rem] grid-cols-14 gap-0.5 rounded-[var(--radius-sm)] bg-surface p-3">
+                {PIXEL_PATTERN.flatMap((row, rowIndex) =>
+                  row.split("").map((pixel, colIndex) => (
+                    <div
+                      key={`mobile-${rowIndex}-${colIndex}`}
+                      className="aspect-square rounded-[4px]"
+                      style={{
+                        background:
+                          pixel === "1"
+                            ? "color-mix(in srgb, var(--color-brand-orange) 78%, white)"
+                            : "color-mix(in srgb, var(--color-brand-blue) 14%, transparent)",
+                      }}
+                    />
+                  )),
                 )}
-              </Button>
-            </Form>
-          </Tabs.Panel>
+              </div>
+            </Card>
+          </Card>
+        </div>
 
-          <Tabs.Panel id="sign-up" className="space-y-4 pt-4">
-            <Alert status="warning">
-              <Alert.Indicator />
-              <Alert.Content>
-                <Alert.Title>Email verification is not enabled yet</Alert.Title>
-                <Alert.Description>
-                  Account creation currently does not prove inbox ownership. Do not rely on verified-email guarantees yet.
-                </Alert.Description>
-              </Alert.Content>
-            </Alert>
+        <aside className="relative hidden border-l border-border/70 bg-surface-alt p-6 lg:flex lg:flex-col lg:justify-between lg:p-7">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--color-brand-gold) 36%, transparent), transparent 50%), radial-gradient(circle at 78% 24%, color-mix(in srgb, var(--color-brand-blue) 30%, transparent), transparent 56%), radial-gradient(circle at 78% 80%, color-mix(in srgb, var(--color-brand-orange) 26%, transparent), transparent 58%)",
+            }}
+          />
+          <div className="relative space-y-3">
+            <p className="accent-type text-xs uppercase tracking-[0.2em] text-ink-muted">
+              Protected workspace
+            </p>
+            <h2 className="section-title max-w-[14ch] text-ink">
+              Build ad visuals with a focused workflow.
+            </h2>
+          </div>
 
-            <Form onSubmit={handleSubmit} className="space-y-4">
-              <AuthTextField
-                name="name"
-                type="text"
-                label="Name"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  setFieldErrors((current) => ({ ...current, name: undefined }));
-                }}
-                placeholder="Your name"
-                autoComplete="name"
-                error={fieldErrors.name}
-              />
-              <AuthTextField
-                name="email"
-                type="email"
-                label="Email"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                  setFieldErrors((current) => ({ ...current, email: undefined }));
-                }}
-                placeholder="you@example.com"
-                autoComplete="email"
-                error={fieldErrors.email}
-              />
-              <AuthTextField
-                name="password"
-                type="password"
-                label="Password"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                  setFieldErrors((current) => ({ ...current, password: undefined }));
-                }}
-                placeholder="At least 8 characters"
-                autoComplete="new-password"
-                error={fieldErrors.password}
-              />
-              <AuthTextField
-                name="confirmPassword"
-                type="password"
-                label="Confirm Password"
-                value={confirmPassword}
-                onChange={(event) => {
-                  setConfirmPassword(event.target.value);
-                  setFieldErrors((current) => ({ ...current, confirmPassword: undefined }));
-                }}
-                placeholder="Repeat your password"
-                autoComplete="new-password"
-                error={fieldErrors.confirmPassword}
-              />
-              <Button type="submit" variant="primary" className="w-full" isDisabled={isSubmitDisabled}>
-                {loading ? (
-                  <>
-                    <Spinner color="current" size="sm" />
-                    Creating account...
-                  </>
-                ) : (
-                  "Create Account"
-                )}
-              </Button>
-            </Form>
-          </Tabs.Panel>
-        </Tabs>
-
-        <EnvironmentChecklist
-          authBaseUrl={runtimeConfig.authBaseUrl}
-          apiBaseUrl={runtimeConfig.apiBaseUrl}
-          mode={runtimeConfig.mode}
-        />
-      </Card>
+          <div className="shadow-soft-stack relative mx-auto mt-6 grid w-full max-w-[24rem] grid-cols-14 gap-1 rounded-[var(--radius-lg)] bg-surface p-4">
+            {PIXEL_PATTERN.flatMap((row, rowIndex) =>
+              row.split("").map((pixel, colIndex) => (
+                <div
+                  key={`${rowIndex}-${colIndex}`}
+                  className="aspect-square rounded-[6px]"
+                  style={{
+                    background:
+                      pixel === "1"
+                        ? "color-mix(in srgb, var(--color-brand-orange) 78%, white)"
+                        : "color-mix(in srgb, var(--color-brand-blue) 14%, transparent)",
+                  }}
+                />
+              )),
+            )}
+          </div>
+        </aside>
+      </div>
     </section>
   );
 }
@@ -328,65 +419,24 @@ function AuthTextField({
   type: string;
   label: string;
   value: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onChange: (nextValue: string) => void;
   placeholder: string;
   autoComplete?: string;
   error?: string;
 }) {
   return (
-    <div className="flex w-full flex-col gap-1">
+    <TextField
+      name={name}
+      value={value}
+      onChange={onChange}
+      isInvalid={Boolean(error)}
+      className="w-full gap-1.5"
+      validationBehavior="aria"
+    >
       <Label>{label}</Label>
-      <Input
-        name={name}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className={error ? "border-danger text-danger" : undefined}
-      />
-      {error ? <p className="text-xs text-danger">{error}</p> : null}
-    </div>
-  );
-}
-
-function EnvironmentChecklist({
-  authBaseUrl,
-  apiBaseUrl,
-  mode,
-}: {
-  authBaseUrl: string;
-  apiBaseUrl: string;
-  mode: "explicit-env" | "workers-dev-inferred" | "same-origin-proxy";
-}) {
-  return (
-    <Card className="space-y-3 bg-canvas p-4">
-      <Card.Header>
-        <Card.Title className="text-sm">Environment Checklist</Card.Title>
-        <Card.Description className="text-xs">
-          Local Vite and custom domains should set explicit URLs to avoid workers.dev inference surprises.
-        </Card.Description>
-      </Card.Header>
-      <div className="space-y-2 text-xs text-ink-soft">
-        <p>
-          Mode: <span className="font-semibold text-ink">{mode}</span>
-        </p>
-        <p>
-          `VITE_AUTH_BASE_URL`:{" "}
-          <span className="font-semibold text-ink">{authBaseUrl || "(same-origin)"}</span>
-        </p>
-        <p>
-          `VITE_API_BASE_URL`:{" "}
-          <span className="font-semibold text-ink">{apiBaseUrl || "(same-origin /api)"}</span>
-        </p>
-        <ul className="list-disc space-y-1 pl-4">
-          <li>Local Vite + local backend worker: set both `VITE_AUTH_BASE_URL` and `VITE_API_BASE_URL`.</li>
-          <li>workers.dev (`addreams-web.*` + `addreams-api.*`): inference works, but explicit env vars are safer.</li>
-          <li>Custom domain deployments: always set explicit auth/api base URLs.</li>
-          <li>If auth fails with cookie/session errors, verify backend trusted origins and credentialed requests.</li>
-        </ul>
-      </div>
-    </Card>
+      <Input type={type} placeholder={placeholder} autoComplete={autoComplete} />
+      {error ? <FieldError>{error}</FieldError> : null}
+    </TextField>
   );
 }
 
@@ -400,7 +450,7 @@ function mapAuthError(message: string | null | undefined, mode: Mode): string {
     return "An account already exists for that email. Sign in instead.";
   }
   if (normalized.includes("network") || normalized.includes("fetch")) {
-    return "Cannot reach the auth server. Verify your auth/api base URLs and backend availability.";
+    return "Cannot reach the auth server. Verify auth/API base URLs and backend availability.";
   }
   if (normalized.includes("cookie") || normalized.includes("session")) {
     return "Your session cookie is missing or expired. Sign in again.";

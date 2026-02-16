@@ -23,6 +23,14 @@ This plan set is the direct continuation of `docs/plans/2026-02-16-account-auth/
 4. `auth-ux`
 5. `security-hardening`
 
+## Progress Update (2026-02-17)
+
+- Step 01 `auth-gating`: planned
+- Step 02 `user-credits`: planned
+- Step 03 `history-gen`: planned
+- Step 04 `auth-ux`: implemented and verified in frontend
+- Step 05 `security-hardening`: planned
+
 ## Step Documents
 
 1. `docs/plans/2026-02-17/auth-gating/README.md`
