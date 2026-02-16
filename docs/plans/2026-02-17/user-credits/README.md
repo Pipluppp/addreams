@@ -27,6 +27,12 @@ Make credits authoritative and enforced per user across backend and frontend, wi
 - Database: atomic decrement and optional ledger.
 - Frontend: disable gated actions and show low/zero-credit states.
 
+## Analysis Inputs Accounted For
+
+- From `2026-02-16-account-auth/analysis.md`: expensive generation endpoints need bounded abuse impact and clear denial behavior under load.
+- This step limits authenticated abuse by making credits authoritative server-side, not only UI-visible.
+- This step complements security hardening by reducing uncontrolled provider spend and request fanout.
+
 ## Data Model Sketch
 
 - Reuse `user_profile` counters for each workflow credit type.
@@ -41,6 +47,7 @@ Make credits authoritative and enforced per user across backend and frontend, wi
 - Define refund policy:
 - Recommended: refund only for provider/system failure before successful output.
 - Write ledger entry for decrement and refunds.
+- Return remaining balance in successful generation responses so frontend state can reconcile quickly.
 
 ## Frontend Sketch
 
@@ -48,6 +55,7 @@ Make credits authoritative and enforced per user across backend and frontend, wi
 - Disable generate button when relevant credits are zero.
 - Show banner/toast with recharge or contact CTA.
 - Keep server as source of truth even if UI appears enabled.
+- Handle typed `OUT_OF_CREDITS` response deterministically (no generic error fallback).
 
 ## Acceptance Criteria
 
@@ -57,6 +65,7 @@ Make credits authoritative and enforced per user across backend and frontend, wi
 - Users with zero credits are blocked server-side and informed client-side.
 - Free users start at 1 credit per workflow.
 - Paid placeholder users start at 20 total credits (phase-1: 10 per workflow).
+- Credit checks remain correct under concurrent requests from the same user session.
 
 ## Cost Baseline (Qwen Models)
 

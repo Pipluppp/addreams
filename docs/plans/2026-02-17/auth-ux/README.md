@@ -11,8 +11,15 @@ Improve `/login`, sign-up clarity, and `/profile` usability while keeping curren
 
 ## Scope
 
-- Frontend: auth screens, profile polish, better states/errors.
+- Frontend: auth screens, profile polish, better states/errors, loading and feedback mechanics (sign up confirm is just some change on the navbar, no oading, etc.)
 - Backend: minor API support only where needed.
+
+## Analysis Inputs Accounted For
+
+- From `2026-02-16-account-auth/analysis.md`:
+- workers.dev URL inference is useful but brittle; custom-domain deployments must rely on explicit `VITE_AUTH_BASE_URL` and `VITE_API_BASE_URL`.
+- `requireEmailVerification: false` is an intentional tradeoff; UX must avoid implying verified-email guarantees that are not yet true.
+- Generation actions must be clearly blocked when session is missing or loading.
 
 ## Login and Sign-Up Sketch
 
@@ -25,6 +32,7 @@ Improve `/login`, sign-up clarity, and `/profile` usability while keeping curren
 - invalid credentials
 - account already exists
 - temporary backend failure
+- Make error copy explicit when auth fails due to missing/expired session cookies.
 
 ## Profile Sketch
 
@@ -41,6 +49,8 @@ Improve `/login`, sign-up clarity, and `/profile` usability while keeping curren
 - Generation workflows are treated as protected actions:
 - signed-out users are redirected to login before generating
 - signed-in users with zero credits see clear blocked state and next-step message
+- Ensure generation fetches and auth fetches use the correct base URLs per environment configuration.
+- Add a lightweight environment checklist for local Vite, local worker, workers.dev, and custom-domain deployments.
 
 ## Acceptance Criteria
 
@@ -49,6 +59,7 @@ Improve `/login`, sign-up clarity, and `/profile` usability while keeping curren
 - Validation and error states are user-readable and actionable.
 - Protected routes reliably redirect when unauthenticated.
 - Generation attempts never proceed when unauthenticated.
+- Auth works without URL surprises across both workers.dev and custom-domain environments when vars are correctly configured.
 
 ## Open Decisions
 
