@@ -190,6 +190,7 @@ async function requestJson<TResponse, TBody = undefined>(
     method: init?.method ?? "GET",
     headers: JSON_HEADERS,
     body: init?.body ? JSON.stringify(init.body) : undefined,
+    credentials: "include",
   });
 
   if (!response.ok) {

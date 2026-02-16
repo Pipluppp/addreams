@@ -84,7 +84,7 @@ app.get("/api/health", (context) =>
 async function requireAuth(c: Context<{ Bindings: Bindings; Variables: Variables }>, next: () => Promise<void>) {
   const auth = createAuth(c.env);
   const result = await auth.api.getSession({ headers: c.req.raw.headers });
-  if (!result) return c.json({ error: "Unauthorized" }, 401);
+  if (!result) return unauthorizedError(c);
   c.set("user", result.user as Variables["user"]);
   c.set("session", result.session as Variables["session"]);
   return next();
@@ -109,6 +109,8 @@ app.get("/api/me", requireAuth, async (c) => {
 
   return c.json({ user, profile });
 });
+
+app.use("/api/workflows/*", requireAuth);
 
 app.post("/api/workflows/image-from-text", async (context) => {
   const requestId = crypto.randomUUID();
@@ -393,6 +395,19 @@ function validationError(context: Context, requestId: string, message: string) {
       requestId,
     } satisfies NormalizedError,
     400,
+  );
+}
+
+function unauthorizedError(context: Context) {
+  return context.json(
+    {
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Authentication required.",
+      },
+      requestId: crypto.randomUUID(),
+    } satisfies NormalizedError,
+    401,
   );
 }
 

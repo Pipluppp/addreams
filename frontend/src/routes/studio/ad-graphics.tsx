@@ -43,6 +43,7 @@ import {
   type ImageDimensions,
 } from "../../lib/image-validation";
 import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
+import { useSession } from "../../lib/auth-client";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 
 const AD_STEPS = [
@@ -110,6 +111,7 @@ export default function AdGraphicsRoute() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [templatesExpanded, setTemplatesExpanded] = useState(false);
   const mutation = useAdGraphicsMutation();
+  const { data: session, isPending: isSessionPending } = useSession();
 
   useEffect(() => {
     if (formValues.referenceMode !== "upload" || !formValues.referenceImageFile) {
@@ -165,6 +167,10 @@ export default function AdGraphicsRoute() {
   const hasAugmentation = effectiveNegativePrompt !== formValues.negative_prompt.trim();
 
   function handleGenerate() {
+    if (isSessionPending || !session) {
+      return;
+    }
+
     if (!validation.isValid) {
       setErrors(validation.errors);
       focusFirstError(validation.errors, AD_FIELD_IDS);
@@ -594,6 +600,7 @@ export default function AdGraphicsRoute() {
         primaryActionPendingLabel="Generating\u2026"
         primaryActionTone={boundedStep === 0 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
+        isPrimaryDisabled={boundedStep === 0 && (isSessionPending || !session)}
       >
         {renderStepContent()}
       </StudioStepperLayout>

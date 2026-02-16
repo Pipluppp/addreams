@@ -17,6 +17,7 @@ import {
 import { useProductShootsMutation } from "../../features/product-shoots/use-product-shoots-mutation";
 import { focusFirstError } from "../../lib/focus-first-error";
 import { getWorkflowOutputImages, isWorkflowCompletedResponse } from "../../lib/api";
+import { useSession } from "../../lib/auth-client";
 import { canNavigateToStep, deriveStepStatuses } from "../../lib/stepper";
 import {
   validateProductShootsForm,
@@ -55,6 +56,7 @@ export default function ProductShootsRoute() {
   const [errors, setErrors] = useState<ProductShootsValidationErrors>({});
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const mutation = useProductShootsMutation();
+  const { data: session, isPending: isSessionPending } = useSession();
 
   const boundedStep = Math.max(0, Math.min(PRODUCT_STEPS.length - 1, currentStep));
   useEffect(() => {
@@ -70,6 +72,10 @@ export default function ProductShootsRoute() {
   const stepStatuses = deriveStepStatuses(boundedStep, stepValidity);
 
   function handleGenerate() {
+    if (isSessionPending || !session) {
+      return;
+    }
+
     if (!validation.isValid) {
       setErrors(validation.errors);
       focusFirstError(validation.errors, PRODUCT_FIELD_IDS);
@@ -293,6 +299,7 @@ export default function ProductShootsRoute() {
         primaryActionPendingLabel="Generating\u2026"
         primaryActionTone={boundedStep === 0 ? "primary" : "secondary"}
         isPrimaryPending={mutation.isPending}
+        isPrimaryDisabled={boundedStep === 0 && (isSessionPending || !session)}
       >
         {renderStepContent()}
       </StudioStepperLayout>

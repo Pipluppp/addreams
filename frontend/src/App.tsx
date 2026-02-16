@@ -23,11 +23,21 @@ export default function App() {
           <Route index element={withSuspense(<HomeRoute />, "Loading homepage…")} />
           <Route
             path="product-shoots"
-            element={withSuspense(<ProductShootsRoute />, "Loading Product Shoots…")}
+            element={withSuspense(
+              <RequireAuth>
+                <ProductShootsRoute />
+              </RequireAuth>,
+              "Loading Product Shoots…",
+            )}
           />
           <Route
             path="ad-graphics"
-            element={withSuspense(<AdGraphicsRoute />, "Loading Ad Graphics…")}
+            element={withSuspense(
+              <RequireAuth>
+                <AdGraphicsRoute />
+              </RequireAuth>,
+              "Loading Ad Graphics…",
+            )}
           />
           <Route path="login" element={withSuspense(<LoginRoute />, "Loading…")} />
           <Route
