@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
+import { eq } from "drizzle-orm";
 import {
   DashScopeRequestError,
   callDashScopeGeneration,
@@ -11,6 +12,21 @@ import {
   normalizeImageFromReferencePayload,
   normalizeImageFromTextPayload,
 } from "./lib/workflow-validation";
+import { createAuth } from "./auth";
+import { createDb } from "./db";
+import * as schema from "./db/schema";
+
+type Bindings = WorkerBindings & {
+  DB: D1Database;
+  BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL: string;
+  TRUSTED_ORIGINS: string;
+};
+
+type Variables = {
+  user: { id: string; name: string; email: string; image: string | null };
+  session: { id: string; token: string; userId: string };
+};
 
 type WorkflowName = "image-from-text" | "image-from-reference" | "video-from-reference";
 
@@ -32,9 +48,29 @@ type ProviderUsage = {
 
 const EXPIRES_IN_HOURS = 24;
 
-const app = new Hono<{ Bindings: WorkerBindings }>();
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-app.use("/api/*", cors());
+app.use("/api/*", (c, next) => {
+  const trustedOrigins = c.env.TRUSTED_ORIGINS.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  return cors({
+    origin: (origin) => {
+      if (!origin) return undefined;
+      return trustedOrigins.includes(origin) ? origin : undefined;
+    },
+    credentials: true,
+    allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  })(c, next);
+});
+
+// Auth catch-all — must be before other /api routes
+app.on(["POST", "GET"], "/api/auth/**", (c) => {
+  const auth = createAuth(c.env);
+  return auth.handler(c.req.raw);
+});
 
 app.get("/api/health", (context) =>
   context.json({
@@ -43,6 +79,36 @@ app.get("/api/health", (context) =>
     timestamp: new Date().toISOString(),
   }),
 );
+
+// Auth middleware for protected routes
+async function requireAuth(c: Context<{ Bindings: Bindings; Variables: Variables }>, next: () => Promise<void>) {
+  const auth = createAuth(c.env);
+  const result = await auth.api.getSession({ headers: c.req.raw.headers });
+  if (!result) return c.json({ error: "Unauthorized" }, 401);
+  c.set("user", result.user as Variables["user"]);
+  c.set("session", result.session as Variables["session"]);
+  return next();
+}
+
+// Profile endpoint — lazy-creates user_profile on first access
+app.get("/api/me", requireAuth, async (c) => {
+  const user = c.get("user");
+  const db = createDb(c.env.DB);
+
+  let profile = await db.query.userProfile.findFirst({
+    where: eq(schema.userProfile.userId, user.id),
+  });
+
+  if (!profile) {
+    const [created] = await db
+      .insert(schema.userProfile)
+      .values({ userId: user.id })
+      .returning();
+    profile = created;
+  }
+
+  return c.json({ user, profile });
+});
 
 app.post("/api/workflows/image-from-text", async (context) => {
   const requestId = crypto.randomUUID();

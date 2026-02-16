@@ -3,4 +3,17 @@
   "name": "addreams-api",
   "main": "./src/index.ts",
   "compatibility_date": "2026-02-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "addreams-db",
+      "database_id": "0723fc04-2e0c-40de-b75e-961f704e897e",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://addreams-web.duncanb013.workers.dev",
+    "TRUSTED_ORIGINS": "https://addreams-web.duncanb013.workers.dev"
+  }
 }

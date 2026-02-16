@@ -4,3 +4,6 @@ QWEN_IMAGE_MODEL=qwen-image-max
 QWEN_IMAGE_EDIT_MODEL=qwen-image-edit-max
 QWEN_TIMEOUT_MS=45000
 QWEN_VIDEO_MODEL=Wan-Image-to-Video
+BETTER_AUTH_URL=http://localhost:5173
+TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:8787,http://localhost:8788,http://127.0.0.1:8788
+BETTER_AUTH_SECRET=replace-with-random-32-plus-char-secret
