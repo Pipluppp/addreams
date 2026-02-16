@@ -8,6 +8,13 @@ Persist every generation for authenticated users, with metadata in D1 and assets
 
 - Workflows run and return outputs, but history records are not consistently persisted and browsable per user.
 - No durable linkage between user, prompt/config, provider response, and stored asset key.
+- Cloudflare R2 bucket provisioning is still pending in account setup, so full asset persistence cannot be finalized yet.
+- Input reference image persistence/retrieval for history rendering is not fully wired end-to-end.
+
+## Active Task Doc
+
+- `docs/plans/2026-02-17/R2-HISTORY-GEN-INTEGRATION.md`
+- This task doc tracks Cloudflare bucket setup, backend input/output asset routes, and frontend rendering wiring.
 
 ## Scope
 

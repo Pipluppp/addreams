@@ -27,7 +27,7 @@ This plan set is the direct continuation of `docs/plans/2026-02-16-account-auth/
 
 - Step 01 `auth-gating`: planned
 - Step 02 `user-credits`: planned
-- Step 03 `history-gen`: planned
+- Step 03 `history-gen`: planned (R2 integration task captured in `docs/plans/2026-02-17/R2-HISTORY-GEN-INTEGRATION.md`)
 - Step 04 `auth-ux`: implemented and verified in frontend
 - Step 05 `security-hardening`: planned
 
