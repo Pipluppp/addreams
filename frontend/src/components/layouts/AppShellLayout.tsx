@@ -1,12 +1,73 @@
 import { useState } from "react";
-import { Card, Disclosure } from "@heroui/react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Card, Disclosure, Dropdown, Avatar, Label, Button } from "@heroui/react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { cn } from "../../lib/cn";
+import { useSession, authClient } from "../../lib/auth-client";
 
 const navItems = [
   { to: "/product-shoots", label: "Product Shoots", tint: "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20" },
   { to: "/ad-graphics", label: "Ad Graphics", tint: "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" },
 ];
+
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+function UserMenu() {
+  const { data: session, isPending } = useSession();
+  const navigate = useNavigate();
+
+  if (isPending) return null;
+
+  if (!session) {
+    return (
+      <NavLink
+        to="/login"
+        className="rounded-xl bg-surface px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-ink transition-colors duration-200 hover:bg-surface/80"
+      >
+        Sign In
+      </NavLink>
+    );
+  }
+
+  const user = session.user;
+
+  return (
+    <Dropdown>
+      <Button aria-label="User menu" variant="ghost" className="rounded-full p-0">
+        <Avatar className="size-8">
+          {user.image ? (
+            <Avatar.Image alt={user.name ?? "User"} src={user.image} />
+          ) : null}
+          <Avatar.Fallback>{getInitials(user.name)}</Avatar.Fallback>
+        </Avatar>
+      </Button>
+      <Dropdown.Popover>
+        <Dropdown.Menu
+          onAction={(key) => {
+            if (key === "profile") navigate("/profile");
+            if (key === "signout") {
+              authClient.signOut().then(() => navigate("/"));
+            }
+          }}
+        >
+          <Dropdown.Item id="profile" textValue="Profile">
+            <Label>Profile</Label>
+          </Dropdown.Item>
+          <Dropdown.Item id="signout" textValue="Sign Out" variant="danger">
+            <Label>Sign Out</Label>
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown.Popover>
+    </Dropdown>
+  );
+}
 
 export function AppShellLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -74,22 +135,25 @@ export function AppShellLayout() {
               </Disclosure.Content>
             </Disclosure>
 
-            <nav className="hidden items-center gap-2 md:flex">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      "rounded-xl px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors duration-200",
-                      item.tint,
-                    )
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
+            <div className="hidden items-center gap-2 md:flex">
+              <nav className="flex items-center gap-2">
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      cn(
+                        "rounded-xl px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors duration-200",
+                        item.tint,
+                      )
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+              <UserMenu />
+            </div>
           </div>
         </Card>
       </header>
