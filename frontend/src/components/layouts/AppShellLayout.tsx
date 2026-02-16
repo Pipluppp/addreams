@@ -7,6 +7,7 @@ import { useSession, authClient } from "../../lib/auth-client";
 const navItems = [
   { to: "/product-shoots", label: "Product Shoots", tint: "bg-orange-500/10 text-orange-400 hover:bg-orange-500/20" },
   { to: "/ad-graphics", label: "Ad Graphics", tint: "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20" },
+  { to: "/history", label: "History", tint: "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20" },
 ];
 
 function getInitials(name: string | null | undefined): string {

@@ -92,3 +92,34 @@ export const creditLedger = sqliteTable(
     index("credit_ledger_workflow_created_idx").on(table.workflow, table.createdAt),
   ],
 );
+
+export const generation = sqliteTable(
+  "generation",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    workflow: text("workflow", {
+      enum: ["image-from-text", "image-from-reference", "video-from-reference"],
+    }).notNull(),
+    status: text("status", { enum: ["pending", "succeeded", "failed"] }).notNull(),
+    inputJson: text("input_json").notNull(),
+    outputJson: text("output_json"),
+    providerRequestId: text("provider_request_id"),
+    providerModel: text("provider_model"),
+    r2Key: text("r2_key"),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("generation_user_created_idx").on(table.userId, table.createdAt),
+    index("generation_user_status_created_idx").on(table.userId, table.status, table.createdAt),
+  ],
+);

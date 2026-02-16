@@ -64,6 +64,7 @@ export type WorkflowSuccessResponse = {
   workflow: "image-from-text" | "image-from-reference";
   status: "completed";
   requestId: string;
+  generationId: string;
   provider: {
     name: "qwen";
     requestId?: string;
@@ -88,6 +89,7 @@ export type WorkflowLegacyStubResponse = {
   workflow: "image-from-text" | "image-from-reference" | "video-from-reference";
   status: "stub";
   requestId: string;
+  generationId?: string;
   credits?: {
     productShoots: number;
     adGraphics: number;
@@ -96,6 +98,44 @@ export type WorkflowLegacyStubResponse = {
 };
 
 export type WorkflowResponse = WorkflowSuccessResponse | WorkflowLegacyStubResponse;
+
+export type GenerationStatus = "pending" | "succeeded" | "failed";
+
+export type HistoryItem = {
+  id: string;
+  workflow: "image-from-text" | "image-from-reference" | "video-from-reference";
+  status: GenerationStatus;
+  createdAt: string | null;
+  updatedAt: string | null;
+  providerModel: string | null;
+  providerRequestId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  r2Key: string | null;
+  assetUrl: string | null;
+};
+
+export type HistoryListResponse = {
+  items: HistoryItem[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    nextOffset: number | null;
+  };
+};
+
+export type HistoryDetailResponse = {
+  item: HistoryItem & {
+    input: unknown;
+    output: unknown;
+  };
+};
+
+export type HistoryDeleteResponse = {
+  id: string;
+  deleted: boolean;
+};
 
 export function isWorkflowCompletedResponse(
   response: WorkflowResponse,
@@ -195,7 +235,7 @@ async function parseJsonSafely<T>(response: Response): Promise<T | null> {
 async function requestJson<TResponse, TBody = undefined>(
   baseUrl: string,
   path: string,
-  init?: { method?: "GET" | "POST"; body?: TBody },
+  init?: { method?: "GET" | "POST" | "DELETE"; body?: TBody },
 ): Promise<TResponse> {
   const response = await fetch(`${baseUrl}${path}`, {
     method: init?.method ?? "GET",
@@ -240,6 +280,22 @@ export function createApiClient(baseUrl: string) {
           body: payload,
         },
       ),
+    listHistory: (params?: {
+      limit?: number;
+      offset?: number;
+      workflow?: WorkflowResponse["workflow"];
+      status?: GenerationStatus;
+    }) =>
+      requestJson<HistoryListResponse>(
+        baseUrl,
+        `/history${params ? buildHistoryQuery(params) : ""}`,
+      ),
+    getHistory: (id: string) =>
+      requestJson<HistoryDetailResponse>(baseUrl, `/history/${encodeURIComponent(id)}`),
+    deleteHistory: (id: string) =>
+      requestJson<HistoryDeleteResponse>(baseUrl, `/history/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      }),
   };
 }
 
@@ -249,3 +305,27 @@ export const API_DEFAULTS = {
   seedMin: MIN_SEED_VALUE,
   seedMax: MAX_SEED_VALUE,
 };
+
+function buildHistoryQuery(params: {
+  limit?: number;
+  offset?: number;
+  workflow?: WorkflowResponse["workflow"];
+  status?: GenerationStatus;
+}): string {
+  const search = new URLSearchParams();
+  if (typeof params.limit === "number") {
+    search.set("limit", String(params.limit));
+  }
+  if (typeof params.offset === "number") {
+    search.set("offset", String(params.offset));
+  }
+  if (params.workflow) {
+    search.set("workflow", params.workflow);
+  }
+  if (params.status) {
+    search.set("status", params.status);
+  }
+
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}

@@ -7,6 +7,7 @@ import { AppShellLayout } from "./components/layouts/AppShellLayout";
 const HomeRoute = lazy(() => import("./routes/home"));
 const ProductShootsRoute = lazy(() => import("./routes/studio/product-shoots"));
 const AdGraphicsRoute = lazy(() => import("./routes/studio/ad-graphics"));
+const HistoryRoute = lazy(() => import("./routes/history"));
 const LoginRoute = lazy(() => import("./routes/login"));
 const ProfileRoute = lazy(() => import("./routes/profile"));
 const NotFoundRoute = lazy(() => import("./routes/not-found"));
@@ -37,6 +38,15 @@ export default function App() {
                 <AdGraphicsRoute />
               </RequireAuth>,
               "Loading Ad Graphics…",
+            )}
+          />
+          <Route
+            path="history"
+            element={withSuspense(
+              <RequireAuth>
+                <HistoryRoute />
+              </RequireAuth>,
+              "Loading history…",
             )}
           />
           <Route path="login" element={withSuspense(<LoginRoute />, "Loading…")} />
