@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Card, Disclosure, Dropdown, Avatar, Label, Button } from "@heroui/react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Card, Disclosure, Dropdown, Avatar, Label } from "@heroui/react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import { useSession, authClient } from "../../lib/auth-client";
 
@@ -53,16 +53,17 @@ function UserMenu() {
 
   return (
     <Dropdown>
-      <Dropdown.Trigger>
-        <Button aria-label="User menu" variant="ghost" className="max-w-[16rem] gap-2 rounded-2xl px-2.5 py-1.5">
-          <Avatar className="size-8 shrink-0">
-            {user.image ? (
-              <Avatar.Image alt={displayName} src={user.image} />
-            ) : null}
-            <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
-          </Avatar>
-          <span className="truncate text-xs font-semibold text-ink">{displayName}</span>
-        </Button>
+      <Dropdown.Trigger
+        aria-label="User menu"
+        className="flex h-11 max-w-[15rem] min-w-0 items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-left shadow-none hover:bg-surface-alt"
+      >
+        <Avatar className="size-8 shrink-0 rounded-lg">
+          {user.image ? (
+            <Avatar.Image alt={displayName} src={user.image} />
+          ) : null}
+          <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
+        </Avatar>
+        <span className="truncate text-sm font-medium leading-none text-ink">{displayName}</span>
       </Dropdown.Trigger>
       <Dropdown.Popover>
         <Dropdown.Menu
@@ -86,10 +87,15 @@ function UserMenu() {
 }
 
 export function AppShellLayout() {
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isStudioAppRoute =
+    location.pathname.startsWith("/product-shoots") || location.pathname.startsWith("/ad-graphics");
+  const HeaderRoot = isStudioAppRoute ? "div" : Card;
+  const headerRootClassName = isStudioAppRoute ? "px-1 py-2 sm:px-2" : "px-4 py-3 sm:px-5";
 
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div className={cn("min-h-screen text-ink", isStudioAppRoute ? "studio-route" : "bg-canvas")}>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:bg-surface focus:px-3 focus:py-2"
@@ -97,8 +103,8 @@ export function AppShellLayout() {
         Skip to main content
       </a>
 
-      <header className="container-shell py-4">
-        <Card className="px-4 py-3 sm:px-5">
+      <header className={cn("container-shell", isStudioAppRoute ? "py-3" : "py-4")}>
+        <HeaderRoot className={headerRootClassName}>
           <div className="flex items-center justify-between gap-3">
             <NavLink
               to="/"
@@ -135,7 +141,7 @@ export function AppShellLayout() {
                       <NavLink
                         key={item.to}
                         to={item.to}
-                        className={({ isActive }) =>
+                        className={() =>
                           cn(
                             "rounded-xl px-3 py-2 text-sm transition-colors duration-200",
                             item.tint,
@@ -157,7 +163,7 @@ export function AppShellLayout() {
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    className={({ isActive }) =>
+                    className={() =>
                       cn(
                         "rounded-xl px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] transition-colors duration-200",
                         item.tint,
@@ -171,99 +177,101 @@ export function AppShellLayout() {
               <UserMenu />
             </div>
           </div>
-        </Card>
+        </HeaderRoot>
       </header>
 
       <main id="main-content">
         <Outlet />
       </main>
 
-      <footer className="mt-14 sm:mt-18">
-        <section className="container-shell py-14">
-          <div className="grid gap-7 md:grid-cols-[1fr_auto] md:items-center">
-            <div className="space-y-4">
-              <h2 className="section-title max-w-[18ch] text-ink">
-                Seen enough? Build your next ad visual now.
-              </h2>
-              <p className="max-w-[56ch] text-base text-ink-soft">
-                Start with Product Shoots or Ad Graphics, iterate quickly, and ship with clarity.
-              </p>
+      {!isStudioAppRoute ? (
+        <footer className="mt-14 sm:mt-18">
+          <section className="container-shell py-14">
+            <div className="grid gap-7 md:grid-cols-[1fr_auto] md:items-center">
+              <div className="space-y-4">
+                <h2 className="section-title max-w-[18ch] text-ink">
+                  Seen enough? Build your next ad visual now.
+                </h2>
+                <p className="max-w-[56ch] text-base text-ink-soft">
+                  Start with Product Shoots or Ad Graphics, iterate quickly, and ship with clarity.
+                </p>
+              </div>
+              <NavLink
+                to="/product-shoots"
+                className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
+              >
+                Build your visual
+              </NavLink>
             </div>
-            <NavLink
-              to="/product-shoots"
-              className="button button--primary rounded-2xl px-5 py-2.5 text-sm font-semibold"
-            >
-              Build your visual
-            </NavLink>
-          </div>
-        </section>
+          </section>
 
-        <section className="bg-ink text-surface">
-          <div className="container-shell grid gap-9 py-12 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr]">
-            <div className="space-y-4">
-              <p className="section-title text-[1.5rem] text-surface">addreams</p>
-              <p className="text-sm text-surface/70">
-                Creative workflows for Product Shoots and Ad Graphics.
-              </p>
-            </div>
+          <section className="bg-ink text-surface">
+            <div className="container-shell grid gap-9 py-12 sm:grid-cols-2 lg:grid-cols-[1.2fr_1fr_1fr_1fr_1fr]">
+              <div className="space-y-4">
+                <p className="section-title text-[1.5rem] text-surface">addreams</p>
+                <p className="text-sm text-surface/70">
+                  Creative workflows for Product Shoots and Ad Graphics.
+                </p>
+              </div>
 
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-surface">Workflows</h3>
-              <ul className="space-y-2 text-sm text-surface/75">
-                <li>
-                  <NavLink to="/product-shoots" className="hover:text-surface">
-                    Product Shoots
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/ad-graphics" className="hover:text-surface">
-                    Ad Graphics
-                  </NavLink>
-                </li>
-              </ul>
-            </div>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-surface">Workflows</h3>
+                <ul className="space-y-2 text-sm text-surface/75">
+                  <li>
+                    <NavLink to="/product-shoots" className="hover:text-surface">
+                      Product Shoots
+                    </NavLink>
+                  </li>
+                  <li>
+                    <NavLink to="/ad-graphics" className="hover:text-surface">
+                      Ad Graphics
+                    </NavLink>
+                  </li>
+                </ul>
+              </div>
 
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-surface">Platform</h3>
-              <ul className="space-y-2 text-sm text-surface/75">
-                <li>
-                  <span>API Status</span>
-                </li>
-                <li>
-                  <span>Documentation</span>
-                </li>
-                <li>
-                  <span>Changelog</span>
-                </li>
-              </ul>
-            </div>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-surface">Platform</h3>
+                <ul className="space-y-2 text-sm text-surface/75">
+                  <li>
+                    <span>API Status</span>
+                  </li>
+                  <li>
+                    <span>Documentation</span>
+                  </li>
+                  <li>
+                    <span>Changelog</span>
+                  </li>
+                </ul>
+              </div>
 
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-surface">Company</h3>
-              <ul className="space-y-2 text-sm text-surface/75">
-                <li>
-                  <span>About</span>
-                </li>
-                <li>
-                  <span>Contact</span>
-                </li>
-              </ul>
-            </div>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-surface">Company</h3>
+                <ul className="space-y-2 text-sm text-surface/75">
+                  <li>
+                    <span>About</span>
+                  </li>
+                  <li>
+                    <span>Contact</span>
+                  </li>
+                </ul>
+              </div>
 
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-surface">Legal</h3>
-              <ul className="space-y-2 text-sm text-surface/75">
-                <li>
-                  <span>Privacy Policy</span>
-                </li>
-                <li>
-                  <span>Terms of Use</span>
-                </li>
-              </ul>
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-surface">Legal</h3>
+                <ul className="space-y-2 text-sm text-surface/75">
+                  <li>
+                    <span>Privacy Policy</span>
+                  </li>
+                  <li>
+                    <span>Terms of Use</span>
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
-        </section>
-      </footer>
+          </section>
+        </footer>
+      ) : null}
     </div>
   );
 }

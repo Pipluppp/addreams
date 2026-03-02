@@ -1,18 +1,27 @@
 import type { ProductShootsRequest } from "../../lib/api";
 import type { ProductShootsFormValues } from "./schema";
 
-export function buildProductShootsPayload(values: ProductShootsFormValues): ProductShootsRequest {
+export type ProductShootsGenerationValues = ProductShootsFormValues & {
+  referenceImageUrl: string;
+};
+
+export function buildProductShootsPayload(values: ProductShootsGenerationValues): ProductShootsRequest {
   const prompt = values.prompt.trim();
   const negativePrompt = values.negative_prompt.trim();
+  const referenceImageUrl = values.referenceImageUrl.trim();
 
   return {
     prompt,
-    model: "image-generation-latest",
+    referenceImageUrl,
+    model: "image-edit-latest",
     input: {
       messages: [
         {
           role: "user",
-          content: [{ type: "text", text: prompt }],
+          content: [
+            { type: "image", image: referenceImageUrl },
+            { type: "text", text: prompt },
+          ],
         },
       ],
     },

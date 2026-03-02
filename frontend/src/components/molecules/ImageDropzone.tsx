@@ -5,9 +5,10 @@ type ImageDropzoneProps = {
   onFileSelected: (file: File) => void;
   error?: string;
   buttonId?: string;
+  panelClassName?: string;
 };
 
-export function ImageDropzone({ onFileSelected, error, buttonId }: ImageDropzoneProps) {
+export function ImageDropzone({ onFileSelected, error, buttonId, panelClassName }: ImageDropzoneProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isActive, setIsActive] = useState(false);
@@ -38,6 +39,7 @@ export function ImageDropzone({ onFileSelected, error, buttonId }: ImageDropzone
           "flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg px-4 py-6 text-center",
           isActive ? "bg-accent-highlight-soft" : "bg-surface-alt",
           error && "bg-[color-mix(in_srgb,var(--color-error)_8%,var(--color-surface-alt))]",
+          panelClassName,
         )}
         onDragOver={(event) => {
           event.preventDefault();

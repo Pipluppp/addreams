@@ -28,13 +28,14 @@ export type BaseWorkflowParameters = {
 };
 
 export type ProductShootsParameters = BaseWorkflowParameters & {
-  size: QwenSizePreset;
+  size?: QwenSizePreset | `${number}*${number}`;
   output_format: OutputFormat;
   response_format?: "url" | "b64_json";
 };
 
 export type ProductShootsRequest = {
   prompt: string;
+  referenceImageUrl: string;
   model: string;
   input: {
     messages: [QwenMessage];
@@ -265,7 +266,7 @@ export function createApiClient(baseUrl: string) {
     submitProductShoots: (payload: ProductShootsRequest) =>
       requestJson<WorkflowResponse, ProductShootsRequest>(
         baseUrl,
-        "/workflows/image-from-text",
+        "/workflows/image-from-reference",
         {
           method: "POST",
           body: payload,

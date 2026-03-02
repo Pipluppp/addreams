@@ -30,6 +30,8 @@ type Bindings = WorkerBindings & {
   BETTER_AUTH_SECRET: string;
   BETTER_AUTH_URL: string;
   TRUSTED_ORIGINS: string;
+  ENVIRONMENT?: string;
+  BYPASS_CREDIT_LIMITS?: string;
 };
 
 type Variables = {
@@ -114,6 +116,60 @@ app.get("/api/me", requireAuth, async (c) => {
 
 app.use("/api/workflows/*", requireAuth);
 
+type CreditReservation = Awaited<ReturnType<typeof reserveCredit>>;
+
+function isCreditBypassEnabled(env: Bindings): boolean {
+  const bypassValue = env.BYPASS_CREDIT_LIMITS?.trim().toLowerCase();
+  if (bypassValue === "1" || bypassValue === "true" || bypassValue === "yes") {
+    return true;
+  }
+
+  const environment = env.ENVIRONMENT?.trim().toLowerCase();
+  return environment === "development" || environment === "local";
+}
+
+async function getCreditBalanceSnapshot(
+  db: ReturnType<typeof createDb>,
+  userId: string,
+): Promise<CreditBalance> {
+  const profile = await ensureUserProfile(db, userId);
+  return {
+    productShoots: profile.creditsProductShoots,
+    adGraphics: profile.creditsAdGraphics,
+  };
+}
+
+async function reserveCreditsForWorkflow(args: {
+  env: Bindings;
+  db: ReturnType<typeof createDb>;
+  d1: D1Database;
+  userId: string;
+  workflow: CreditWorkflow;
+}): Promise<{
+  reservation: CreditReservation;
+  creditsWereReserved: boolean;
+}> {
+  if (isCreditBypassEnabled(args.env)) {
+    return {
+      reservation: {
+        success: true,
+        balance: await getCreditBalanceSnapshot(args.db, args.userId),
+      },
+      creditsWereReserved: false,
+    };
+  }
+
+  return {
+    reservation: await reserveCredit({
+      db: args.db,
+      d1: args.d1,
+      userId: args.userId,
+      workflow: args.workflow,
+    }),
+    creditsWereReserved: true,
+  };
+}
+
 app.post("/api/workflows/image-from-text", async (context) => {
   const requestId = crypto.randomUUID();
   const user = context.get("user");
@@ -133,12 +189,14 @@ app.post("/api/workflows/image-from-text", async (context) => {
     return backendConfigError(context, requestId, config.message);
   }
 
-  const creditReservation = await reserveCredit({
-    db,
-    d1: context.env.DB,
-    userId: user.id,
-    workflow: "image-from-text",
-  });
+  const { reservation: creditReservation, creditsWereReserved } =
+    await reserveCreditsForWorkflow({
+      env: context.env,
+      db,
+      d1: context.env.DB,
+      userId: user.id,
+      workflow: "image-from-text",
+    });
 
   if (!creditReservation.success) {
     return outOfCreditsError(context, requestId, creditReservation.balance);
@@ -233,13 +291,15 @@ app.post("/api/workflows/image-from-text", async (context) => {
       requestId,
     });
 
-    await safelyRefundCredit({
-      db,
-      d1: context.env.DB,
-      userId: user.id,
-      workflow: "image-from-text",
-      requestId,
-    });
+    if (creditsWereReserved) {
+      await safelyRefundCredit({
+        db,
+        d1: context.env.DB,
+        userId: user.id,
+        workflow: "image-from-text",
+        requestId,
+      });
+    }
     return handleWorkflowError(context, requestId, error);
   }
 });
@@ -263,12 +323,14 @@ app.post("/api/workflows/image-from-reference", async (context) => {
     return backendConfigError(context, requestId, config.message);
   }
 
-  const creditReservation = await reserveCredit({
-    db,
-    d1: context.env.DB,
-    userId: user.id,
-    workflow: "image-from-reference",
-  });
+  const { reservation: creditReservation, creditsWereReserved } =
+    await reserveCreditsForWorkflow({
+      env: context.env,
+      db,
+      d1: context.env.DB,
+      userId: user.id,
+      workflow: "image-from-reference",
+    });
 
   if (!creditReservation.success) {
     return outOfCreditsError(context, requestId, creditReservation.balance);
@@ -281,8 +343,11 @@ app.post("/api/workflows/image-from-reference", async (context) => {
     input: {
       requestId,
       prompt: normalized.data.prompt,
-      referenceImage: normalized.data.referenceImage,
-      parameters: normalized.data,
+      referenceImage: serializeReferenceForHistory(normalized.data.referenceImage),
+      parameters: {
+        ...normalized.data,
+        referenceImage: serializeReferenceForHistory(normalized.data.referenceImage),
+      },
     },
   });
 
@@ -369,13 +434,15 @@ app.post("/api/workflows/image-from-reference", async (context) => {
       requestId,
     });
 
-    await safelyRefundCredit({
-      db,
-      d1: context.env.DB,
-      userId: user.id,
-      workflow: "image-from-reference",
-      requestId,
-    });
+    if (creditsWereReserved) {
+      await safelyRefundCredit({
+        db,
+        d1: context.env.DB,
+        userId: user.id,
+        workflow: "image-from-reference",
+        requestId,
+      });
+    }
     return handleWorkflowError(context, requestId, error);
   }
 });
@@ -397,12 +464,14 @@ app.post("/api/workflows/video-from-reference", async (context) => {
     return context.json({ error: "prompt and referenceImageUrl are required" }, 400);
   }
 
-  const creditReservation = await reserveCredit({
-    db,
-    d1: context.env.DB,
-    userId: user.id,
-    workflow: "video-from-reference",
-  });
+  const { reservation: creditReservation, creditsWereReserved } =
+    await reserveCreditsForWorkflow({
+      env: context.env,
+      db,
+      d1: context.env.DB,
+      userId: user.id,
+      workflow: "video-from-reference",
+    });
 
   if (!creditReservation.success) {
     return outOfCreditsError(context, requestId, creditReservation.balance);
@@ -415,7 +484,7 @@ app.post("/api/workflows/video-from-reference", async (context) => {
     input: {
       requestId,
       prompt,
-      referenceImageUrl,
+      referenceImageUrl: serializeReferenceForHistory(referenceImageUrl),
     },
   });
 
@@ -434,13 +503,15 @@ app.post("/api/workflows/video-from-reference", async (context) => {
       },
     });
   } catch {
-    await safelyRefundCredit({
-      db,
-      d1: context.env.DB,
-      userId: user.id,
-      workflow: "video-from-reference",
-      requestId,
-    });
+    if (creditsWereReserved) {
+      await safelyRefundCredit({
+        db,
+        d1: context.env.DB,
+        userId: user.id,
+        workflow: "video-from-reference",
+        requestId,
+      });
+    }
     return context.json(
       {
         error: {
@@ -1022,6 +1093,14 @@ async function safelyRefundCredit(args: {
 
 function readString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function serializeReferenceForHistory(reference: string): string {
+  const trimmed = reference.trim();
+  if (trimmed.startsWith("data:image/")) {
+    return `[omitted:data-url length=${trimmed.length}]`;
+  }
+  return trimmed;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

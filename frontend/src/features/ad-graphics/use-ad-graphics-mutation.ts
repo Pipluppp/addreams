@@ -12,7 +12,8 @@ export function useAdGraphicsMutation() {
     mutationFn: async (values: AdGraphicsFormValues) => {
       const validation = validateAdGraphicsForm(values);
       if (!validation.isValid) {
-        throw new Error("Please resolve validation errors before submitting.");
+        const firstError = Object.values(validation.errors).find(Boolean);
+        throw new Error(firstError ?? "Please resolve validation errors before submitting.");
       }
 
       const payload = await buildAdGraphicsPayload(values);

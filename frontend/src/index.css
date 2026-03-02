@@ -52,6 +52,15 @@
   --color-warning: #dd9a2b;
   --color-error: #d64545;
 
+  --color-studio-bg: #f7f2eb;
+  --color-studio-surface: #ffffff;
+  --color-studio-surface-alt: #f3eee6;
+  --color-studio-border: #d9d4cc;
+  --color-studio-accent: #0064ff;
+  --color-studio-accent-contrast: #ffffff;
+  --color-studio-text: #171717;
+  --color-studio-text-muted: #6f6a63;
+
   --text-hero: clamp(2.3rem, 5.4vw, 4.6rem);
   --text-h1: clamp(1.9rem, 4.1vw, 3rem);
   --text-h2: clamp(1.45rem, 2.8vw, 2.2rem);
@@ -184,6 +193,52 @@
     *::after {
       corner-shape: squircle;
     }
+  }
+
+  .studio-route {
+    --background: var(--color-studio-bg);
+    --foreground: var(--color-studio-text);
+    --muted: var(--color-studio-text-muted);
+
+    --surface: var(--color-studio-surface);
+    --surface-foreground: var(--color-studio-text);
+    --surface-secondary: var(--color-studio-surface-alt);
+    --surface-secondary-foreground: var(--color-studio-text);
+    --surface-tertiary: var(--color-studio-surface-alt);
+    --surface-tertiary-foreground: var(--color-studio-text);
+
+    --accent: var(--color-studio-accent);
+    --accent-foreground: var(--color-studio-accent-contrast);
+    --border: var(--color-studio-border);
+
+    --field-background: var(--color-studio-surface);
+    --field-foreground: var(--color-studio-text);
+    --field-placeholder: var(--color-studio-text-muted);
+    --field-border: var(--color-studio-border);
+
+    --focus: var(--color-studio-accent);
+
+    --color-canvas: var(--color-studio-bg);
+    --color-surface: var(--color-studio-surface);
+    --color-surface-alt: var(--color-studio-surface-alt);
+    --color-border: var(--color-studio-border);
+    --color-border-soft: var(--color-studio-border);
+    --color-ink: var(--color-studio-text);
+    --color-ink-soft: var(--color-studio-text-muted);
+    --color-ink-muted: var(--color-studio-text-muted);
+    --color-accent-primary: var(--color-studio-accent);
+    --color-accent-primary-hover: color-mix(in srgb, var(--color-studio-accent) 88%, white);
+    --color-accent-primary-soft: color-mix(in srgb, var(--color-studio-accent) 18%, transparent);
+    --color-on-primary: var(--color-studio-accent-contrast);
+  }
+
+  .studio-route {
+    @apply min-h-screen bg-studio-bg text-studio-text;
+    background-image:
+      radial-gradient(circle at 8% -5%, rgba(0, 100, 255, 0.18) 0%, transparent 50%),
+      radial-gradient(circle at 96% 4%, rgba(236, 82, 11, 0.14) 0%, transparent 42%),
+      radial-gradient(circle at 50% 120%, rgba(255, 203, 0, 0.14) 0%, transparent 48%),
+      linear-gradient(180deg, #f6efe4 0%, #ece6dc 100%);
   }
 }
 
