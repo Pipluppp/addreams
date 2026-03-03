@@ -300,6 +300,58 @@ async function requestJson<TResponse, TBody = undefined>(
   return payload;
 }
 
+function toApiOrigin(baseUrl: string): string | null {
+  if (!/^https?:\/\//i.test(baseUrl)) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(baseUrl);
+    return parsed.origin;
+  } catch {
+    return null;
+  }
+}
+
+function resolveAssetUrl(baseUrl: string, value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  if (!value.startsWith("/")) {
+    return value;
+  }
+
+  if (!value.startsWith("/api/")) {
+    return value;
+  }
+
+  const origin = toApiOrigin(baseUrl);
+  if (!origin) {
+    return value;
+  }
+
+  return new URL(value, origin).toString();
+}
+
+function mapHistoryItemUrls<TItem extends HistoryItem>(baseUrl: string, item: TItem): TItem {
+  return {
+    ...item,
+    assetUrl: resolveAssetUrl(baseUrl, item.assetUrl),
+  };
+}
+
+function mapProductShootRunUrls(baseUrl: string, item: ProductShootRun): ProductShootRun {
+  return {
+    ...item,
+    sourceImageUrl: resolveAssetUrl(baseUrl, item.sourceImageUrl),
+    outputs: item.outputs.map((output) => ({
+      ...output,
+      imageUrl: resolveAssetUrl(baseUrl, output.imageUrl),
+    })),
+  };
+}
+
 export type ApiClient = ReturnType<typeof createApiClient>;
 
 export function createApiClient(baseUrl: string) {
@@ -319,32 +371,55 @@ export function createApiClient(baseUrl: string) {
         method: "POST",
         body: payload,
       }),
-    listHistory: (params?: {
+    listHistory: async (params?: {
       limit?: number;
       offset?: number;
       workflow?: WorkflowResponse["workflow"];
       status?: GenerationStatus;
-    }) =>
-      requestJson<HistoryListResponse>(
+    }) => {
+      const response = await requestJson<HistoryListResponse>(
         baseUrl,
         `/history${params ? buildHistoryQuery(params) : ""}`,
-      ),
-    getHistory: (id: string) =>
-      requestJson<HistoryDetailResponse>(baseUrl, `/history/${encodeURIComponent(id)}`),
+      );
+      return {
+        ...response,
+        items: response.items.map((item) => mapHistoryItemUrls(baseUrl, item)),
+      };
+    },
+    getHistory: async (id: string) => {
+      const response = await requestJson<HistoryDetailResponse>(
+        baseUrl,
+        `/history/${encodeURIComponent(id)}`,
+      );
+      return {
+        ...response,
+        item: mapHistoryItemUrls(baseUrl, response.item),
+      };
+    },
     deleteHistory: (id: string) =>
       requestJson<HistoryDeleteResponse>(baseUrl, `/history/${encodeURIComponent(id)}`, {
         method: "DELETE",
       }),
-    listProductShootRuns: (params?: { limit?: number; offset?: number }) =>
-      requestJson<ProductShootRunsListResponse>(
+    listProductShootRuns: async (params?: { limit?: number; offset?: number }) => {
+      const response = await requestJson<ProductShootRunsListResponse>(
         baseUrl,
         `/product-shoots/runs${params ? buildProductShootRunsQuery(params) : ""}`,
-      ),
-    getProductShootRun: (runId: string) =>
-      requestJson<ProductShootRunDetailResponse>(
+      );
+      return {
+        ...response,
+        items: response.items.map((item) => mapProductShootRunUrls(baseUrl, item)),
+      };
+    },
+    getProductShootRun: async (runId: string) => {
+      const response = await requestJson<ProductShootRunDetailResponse>(
         baseUrl,
         `/product-shoots/runs/${encodeURIComponent(runId)}`,
-      ),
+      );
+      return {
+        ...response,
+        item: mapProductShootRunUrls(baseUrl, response.item),
+      };
+    },
   };
 }
 

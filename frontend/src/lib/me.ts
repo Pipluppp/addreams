@@ -1,3 +1,5 @@
+import { resolveRuntimeConfig } from "./runtime-config";
+
 export type MeResponse = {
   user: { id: string; name: string; email: string; image: string | null };
   profile: {
@@ -10,7 +12,8 @@ export type MeResponse = {
 export const meQueryKey = ["me"] as const;
 
 export async function fetchMe(): Promise<MeResponse> {
-  const response = await fetch("/api/me", { credentials: "include" });
+  const apiBaseUrl = resolveRuntimeConfig().apiBaseUrl;
+  const response = await fetch(`${apiBaseUrl}/me`, { credentials: "include" });
   if (!response.ok) {
     throw new Error("Failed to load profile");
   }
