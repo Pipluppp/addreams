@@ -22,7 +22,7 @@ import {
   type CreditBalance,
   type CreditWorkflow,
 } from "./lib/credits";
-import { parseJsonText, uploadGenerationAsset } from "./lib/history";
+import { parseJsonText, uploadGenerationAsset, uploadReferenceAsset } from "./lib/history";
 
 type Bindings = WorkerBindings & {
   DB: D1Database;
@@ -62,6 +62,68 @@ type GenerationStatus = "pending" | "succeeded" | "failed";
 type HistorySummaryRow = typeof schema.generation.$inferSelect;
 
 const EXPIRES_IN_HOURS = 24;
+const PRODUCT_SHOOT_RUN_LIMIT_DEFAULT = 10;
+const PRODUCT_SHOOT_RUN_LIMIT_MAX = 24;
+const MAX_REFERENCE_IMAGE_BYTES = 10 * 1024 * 1024;
+const REFERENCE_IMAGE_FETCH_TIMEOUT_MS = 15_000;
+const MAX_REFERENCE_IMAGE_REDIRECTS = 3;
+const INTERNAL_HISTORY_ASSET_PATH_PATTERN = /^\/api\/history\/([^/]+)\/asset\/?$/;
+const INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN =
+  /^\/api\/product-shoots\/runs\/([^/]+)\/source\/?$/;
+const SUPPORTED_REFERENCE_IMAGE_CONTENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/bmp",
+  "image/webp",
+  "image/tiff",
+  "image/gif",
+]);
+const REFERENCE_IMAGE_CONTENT_TYPE_ALIASES: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+  "image/x-ms-bmp": "image/bmp",
+  "image/x-bmp": "image/bmp",
+  "image/tif": "image/tiff",
+  "image/x-tiff": "image/tiff",
+};
+
+type ProductShootTemplateSnapshot = {
+  id: string;
+  label: string;
+};
+
+type ProductShootContext = {
+  runId: string;
+  templateId: string;
+  templateLabel: string;
+  selectedTemplates: ProductShootTemplateSnapshot[];
+  aspectRatioId?: string;
+};
+
+type ProductShootRunOutputSummary = {
+  generationId: string;
+  templateId: string;
+  templateLabel: string;
+  imageUrl: string | null;
+  createdAt: string | null;
+};
+
+type ProductShootRunSummary = {
+  runId: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  sourceImageUrl: string | null;
+  templates: ProductShootTemplateSnapshot[];
+  outputCount: number;
+  outputs: ProductShootRunOutputSummary[];
+  aspectRatioId: string | null;
+};
+
+type ReferenceImageResolutionSource =
+  | "provided-data-url"
+  | "internal-history-asset"
+  | "internal-run-source"
+  | "external-url";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -323,6 +385,20 @@ app.post("/api/workflows/image-from-reference", async (context) => {
     return backendConfigError(context, requestId, config.message);
   }
 
+  const resolvedReference = await resolveReferenceImageForProvider({
+    context,
+    db,
+    userId: user.id,
+    requestUrl: context.req.url,
+    referenceImage: normalized.data.referenceImage,
+  });
+  if (!resolvedReference.success) {
+    if (resolvedReference.errorType === "backend") {
+      return backendConfigError(context, requestId, resolvedReference.message);
+    }
+    return validationError(context, requestId, resolvedReference.message);
+  }
+
   const { reservation: creditReservation, creditsWereReserved } =
     await reserveCreditsForWorkflow({
       env: context.env,
@@ -336,6 +412,7 @@ app.post("/api/workflows/image-from-reference", async (context) => {
     return outOfCreditsError(context, requestId, creditReservation.balance);
   }
 
+  const productShootContext = parseProductShootContext(body.data);
   const generationId = await createPendingGenerationRecord({
     db,
     userId: user.id,
@@ -347,7 +424,9 @@ app.post("/api/workflows/image-from-reference", async (context) => {
       parameters: {
         ...normalized.data,
         referenceImage: serializeReferenceForHistory(normalized.data.referenceImage),
+        referenceImageSource: resolvedReference.source,
       },
+      ...(productShootContext ? { productShootContext } : {}),
     },
   });
 
@@ -359,7 +438,7 @@ app.post("/api/workflows/image-from-reference", async (context) => {
           {
             role: "user",
             content: [
-              { image: normalized.data.referenceImage },
+              { image: resolvedReference.referenceImageDataUrl },
               { text: normalized.data.prompt },
             ],
           },
@@ -395,6 +474,15 @@ app.post("/api/workflows/image-from-reference", async (context) => {
     }
 
     const asset = await persistGenerationAsset(context, user.id, generationId, urls[0]);
+    const sourceAsset = await persistReferenceAsset(
+      context,
+      user.id,
+      productShootContext?.runId ?? generationId,
+      resolvedReference.referenceImageDataUrl,
+    );
+    const sourceAssetUrl = sourceAsset
+      ? `/api/product-shoots/runs/${productShootContext?.runId ?? generationId}/source`
+      : null;
     const usage = parseUsage(providerResponse.payload);
     const responsePayload = successPayload({
       workflow: "image-from-reference",
@@ -419,6 +507,8 @@ app.post("/api/workflows/image-from-reference", async (context) => {
         images: urls,
         usage,
         assetUrl: asset ? `/api/history/${generationId}/asset` : null,
+        sourceR2Key: sourceAsset?.r2Key ?? null,
+        sourceAssetUrl,
       },
     });
 
@@ -642,6 +732,103 @@ app.delete("/api/history/:id", requireAuth, async (context) => {
   }
 
   return context.json({ id: generationId, deleted: true });
+});
+
+app.get("/api/product-shoots/runs", requireAuth, async (context) => {
+  const user = context.get("user");
+  const db = createDb(context.env.DB);
+  const limit = parsePositiveInt(
+    context.req.query("limit"),
+    PRODUCT_SHOOT_RUN_LIMIT_DEFAULT,
+    1,
+    PRODUCT_SHOOT_RUN_LIMIT_MAX,
+  );
+  const offset = parsePositiveInt(context.req.query("offset"), 0, 0, 10_000);
+
+  const rows = await db
+    .select()
+    .from(schema.generation)
+    .where(
+      and(
+        eq(schema.generation.userId, user.id),
+        eq(schema.generation.workflow, "image-from-reference"),
+        eq(schema.generation.status, "succeeded"),
+      ),
+    )
+    .orderBy(desc(schema.generation.createdAt))
+    .limit(400);
+
+  const groupedRuns = groupProductShootRuns(rows, context.req.url);
+  const pagedRuns = groupedRuns.slice(offset, offset + limit);
+  const nextOffset = offset + pagedRuns.length < groupedRuns.length ? offset + limit : null;
+
+  return context.json({
+    items: pagedRuns,
+    pagination: {
+      limit,
+      offset,
+      total: groupedRuns.length,
+      nextOffset,
+    },
+  });
+});
+
+app.get("/api/product-shoots/runs/:runId", requireAuth, async (context) => {
+  const user = context.get("user");
+  const db = createDb(context.env.DB);
+  const runId = context.req.param("runId");
+
+  const rows = await db
+    .select()
+    .from(schema.generation)
+    .where(
+      and(
+        eq(schema.generation.userId, user.id),
+        eq(schema.generation.workflow, "image-from-reference"),
+        eq(schema.generation.status, "succeeded"),
+      ),
+    )
+    .orderBy(desc(schema.generation.createdAt))
+    .limit(400);
+
+  const groupedRuns = groupProductShootRuns(rows, context.req.url);
+  const run = groupedRuns.find((item) => item.runId === runId) ?? null;
+  if (!run) {
+    return context.json({ error: "Product shoot run not found." }, 404);
+  }
+
+  return context.json({ item: run });
+});
+
+app.get("/api/product-shoots/runs/:runId/source", requireAuth, async (context) => {
+  const bucket = context.env.GENERATIONS_BUCKET;
+  if (!bucket) {
+    return backendConfigError(
+      context,
+      crypto.randomUUID(),
+      "GENERATIONS_BUCKET is not configured.",
+    );
+  }
+
+  const user = context.get("user");
+  const db = createDb(context.env.DB);
+  const runId = context.req.param("runId");
+  const sourceR2Key = await getProductShootRunSourceR2Key(db, user.id, runId);
+  if (!sourceR2Key) {
+    return context.json({ error: "Product shoot source image not found." }, 404);
+  }
+
+  const asset = await bucket.get(sourceR2Key);
+  if (!asset?.body) {
+    return context.json({ error: "Product shoot source image not found." }, 404);
+  }
+
+  return new Response(asset.body, {
+    headers: {
+      "content-type": asset.httpMetadata?.contentType || "application/octet-stream",
+      "cache-control": "private, max-age=3600",
+    },
+  });
 });
 
 app.onError((_error, context) => {
@@ -919,6 +1106,24 @@ async function persistGenerationAsset(
   });
 }
 
+async function persistReferenceAsset(
+  context: Context<{ Bindings: Bindings; Variables: Variables }>,
+  userId: string,
+  runId: string,
+  referenceImage: string,
+) {
+  if (!context.env.GENERATIONS_BUCKET) {
+    return null;
+  }
+
+  return uploadReferenceAsset({
+    bucket: context.env.GENERATIONS_BUCKET,
+    referenceImage,
+    userId,
+    runId,
+  });
+}
+
 async function getGenerationForUser(
   db: ReturnType<typeof createDb>,
   userId: string,
@@ -1009,12 +1214,794 @@ function extractFirstImageUrl(output: unknown): string | null {
   }
 
   const first = images[0];
-  if (!isRecord(first)) {
+  if (typeof first === "string" && first.trim().length > 0) {
+    return first;
+  }
+  if (isRecord(first)) {
+    const url = first.url;
+    return typeof url === "string" && url.trim().length > 0 ? url : null;
+  }
+  return null;
+}
+
+function groupProductShootRuns(
+  rows: HistorySummaryRow[],
+  requestUrl: string,
+): ProductShootRunSummary[] {
+  const groupedRuns = new Map<
+    string,
+    {
+      runId: string;
+      templates: ProductShootTemplateSnapshot[];
+      aspectRatioId: string | null;
+      sourceImageUrl: string | null;
+      createdAt: Date | null;
+      updatedAt: Date | null;
+      outputs: Array<{
+        generationId: string;
+        templateId: string;
+        templateLabel: string;
+        imageUrl: string | null;
+        createdAt: Date | null;
+      }>;
+    }
+  >();
+
+  for (const row of rows) {
+    const parsedInput = parseJsonText(row.inputJson);
+    const parsedOutput = parseJsonText(row.outputJson);
+    const contextValue = readProductShootContext(parsedInput);
+    if (!contextValue) {
+      continue;
+    }
+
+    const currentGroup = groupedRuns.get(contextValue.runId);
+    const nextSourceImageUrl =
+      readSourceAssetUrl(parsedOutput, requestUrl) ??
+      readReferenceImageFromInput(parsedInput);
+    const outputImageUrl = resolveGenerationImageUrl(row, parsedOutput, requestUrl);
+    const outputTemplateLabel = contextValue.templateLabel.trim();
+
+    if (!currentGroup) {
+      groupedRuns.set(contextValue.runId, {
+        runId: contextValue.runId,
+        templates: contextValue.selectedTemplates,
+        aspectRatioId: contextValue.aspectRatioId ?? null,
+        sourceImageUrl: nextSourceImageUrl,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        outputs: [
+          {
+            generationId: row.id,
+            templateId: contextValue.templateId,
+            templateLabel: outputTemplateLabel,
+            imageUrl: outputImageUrl,
+            createdAt: row.createdAt,
+          },
+        ],
+      });
+      continue;
+    }
+
+    if (row.createdAt && (!currentGroup.createdAt || row.createdAt < currentGroup.createdAt)) {
+      currentGroup.createdAt = row.createdAt;
+    }
+
+    if (row.updatedAt && (!currentGroup.updatedAt || row.updatedAt > currentGroup.updatedAt)) {
+      currentGroup.updatedAt = row.updatedAt;
+    }
+
+    if (!currentGroup.sourceImageUrl && nextSourceImageUrl) {
+      currentGroup.sourceImageUrl = nextSourceImageUrl;
+    }
+
+    if (
+      currentGroup.templates.length === 0 &&
+      Array.isArray(contextValue.selectedTemplates) &&
+      contextValue.selectedTemplates.length > 0
+    ) {
+      currentGroup.templates = contextValue.selectedTemplates;
+    }
+
+    if (!currentGroup.aspectRatioId && contextValue.aspectRatioId) {
+      currentGroup.aspectRatioId = contextValue.aspectRatioId;
+    }
+
+    currentGroup.outputs.push({
+      generationId: row.id,
+      templateId: contextValue.templateId,
+      templateLabel: outputTemplateLabel,
+      imageUrl: outputImageUrl,
+      createdAt: row.createdAt,
+    });
+  }
+
+  const groups = Array.from(groupedRuns.values());
+  for (const group of groups) {
+    const templateOrderMap = new Map(group.templates.map((template, index) => [template.id, index]));
+    group.outputs.sort((left, right) => {
+      const leftOrder = templateOrderMap.get(left.templateId) ?? Number.MAX_SAFE_INTEGER;
+      const rightOrder = templateOrderMap.get(right.templateId) ?? Number.MAX_SAFE_INTEGER;
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
+      }
+
+      const leftTime = left.createdAt?.getTime() ?? 0;
+      const rightTime = right.createdAt?.getTime() ?? 0;
+      return leftTime - rightTime;
+    });
+  }
+
+  groups.sort((left, right) => {
+    const leftTime = left.updatedAt?.getTime() ?? 0;
+    const rightTime = right.updatedAt?.getTime() ?? 0;
+    return rightTime - leftTime;
+  });
+
+  return groups.map((group) => ({
+    runId: group.runId,
+    createdAt: toIsoString(group.createdAt),
+    updatedAt: toIsoString(group.updatedAt),
+    sourceImageUrl: group.sourceImageUrl,
+    templates: group.templates,
+    outputCount: group.outputs.length,
+    outputs: group.outputs.map((output) => ({
+      generationId: output.generationId,
+      templateId: output.templateId,
+      templateLabel: output.templateLabel,
+      imageUrl: output.imageUrl,
+      createdAt: toIsoString(output.createdAt),
+    })),
+    aspectRatioId: group.aspectRatioId,
+  }));
+}
+
+function resolveGenerationImageUrl(
+  row: HistorySummaryRow,
+  parsedOutput: unknown,
+  requestUrl: string,
+): string | null {
+  if (row.r2Key) {
+    return new URL(`/api/history/${row.id}/asset`, requestUrl).toString();
+  }
+
+  return extractFirstImageUrl(parsedOutput);
+}
+
+function readSourceAssetUrl(output: unknown, requestUrl: string): string | null {
+  if (!isRecord(output)) {
     return null;
   }
 
-  const url = first.url;
-  return typeof url === "string" && url.trim().length > 0 ? url : null;
+  const value = output.sourceAssetUrl;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  try {
+    return new URL(value, requestUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function readSourceR2Key(output: unknown): string | null {
+  if (!isRecord(output)) {
+    return null;
+  }
+
+  const value = output.sourceR2Key;
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function readReferenceImageFromInput(input: unknown): string | null {
+  if (!isRecord(input)) {
+    return null;
+  }
+
+  const value = input.referenceImage;
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  if (value.startsWith("[omitted:data-url")) {
+    return null;
+  }
+
+  try {
+    const url = new URL(value);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return value;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function getProductShootRunSourceR2Key(
+  db: ReturnType<typeof createDb>,
+  userId: string,
+  runId: string,
+): Promise<string | null> {
+  const rows = await db
+    .select({
+      inputJson: schema.generation.inputJson,
+      outputJson: schema.generation.outputJson,
+    })
+    .from(schema.generation)
+    .where(
+      and(
+        eq(schema.generation.userId, userId),
+        eq(schema.generation.workflow, "image-from-reference"),
+        eq(schema.generation.status, "succeeded"),
+      ),
+    )
+    .orderBy(desc(schema.generation.createdAt))
+    .limit(400);
+
+  for (const row of rows) {
+    const parsedInput = parseJsonText(row.inputJson);
+    const contextValue = readProductShootContext(parsedInput);
+    if (!contextValue || contextValue.runId !== runId) {
+      continue;
+    }
+
+    const parsedOutput = parseJsonText(row.outputJson);
+    const sourceR2Key = readSourceR2Key(parsedOutput);
+    if (sourceR2Key) {
+      return sourceR2Key;
+    }
+  }
+
+  return null;
+}
+
+async function resolveReferenceImageForProvider(args: {
+  context: Context<{ Bindings: Bindings; Variables: Variables }>;
+  db: ReturnType<typeof createDb>;
+  userId: string;
+  requestUrl: string;
+  referenceImage: string;
+}): Promise<
+  | {
+      success: true;
+      referenceImageDataUrl: string;
+      source: ReferenceImageResolutionSource;
+    }
+  | {
+      success: false;
+      errorType: "validation" | "backend";
+      message: string;
+    }
+> {
+  const rawReference = args.referenceImage.trim();
+  const isDataUrlCandidate = rawReference.startsWith("data:");
+  const dataUrlAsset = parseImageDataUrl(rawReference);
+  if (dataUrlAsset) {
+    if (dataUrlAsset.bytes.byteLength > MAX_REFERENCE_IMAGE_BYTES) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Reference image must be 10MB or smaller.",
+      };
+    }
+
+    return {
+      success: true,
+      referenceImageDataUrl: buildImageDataUrl(dataUrlAsset.contentType, dataUrlAsset.bytes),
+      source: "provided-data-url",
+    };
+  }
+
+  if (isDataUrlCandidate) {
+    return {
+      success: false,
+      errorType: "validation",
+      message: "referenceImageUrl data URL is invalid or exceeds the 10MB size limit.",
+    };
+  }
+
+  let referenceUrl: URL;
+  try {
+    referenceUrl = new URL(rawReference);
+  } catch {
+    return {
+      success: false,
+      errorType: "validation",
+      message: "referenceImageUrl must be an http(s) URL or Base64 data URL.",
+    };
+  }
+
+  if (referenceUrl.protocol !== "http:" && referenceUrl.protocol !== "https:") {
+    return {
+      success: false,
+      errorType: "validation",
+      message: "referenceImageUrl must use http or https.",
+    };
+  }
+
+  const internalTarget = parseInternalReferenceTarget(referenceUrl, new URL(args.requestUrl));
+  if (internalTarget) {
+    const bucket = args.context.env.GENERATIONS_BUCKET;
+    if (!bucket) {
+      return {
+        success: false,
+        errorType: "backend",
+        message: "GENERATIONS_BUCKET is not configured.",
+      };
+    }
+
+    if (internalTarget.kind === "history-asset") {
+      const row = await getGenerationForUser(args.db, args.userId, internalTarget.generationId);
+      if (!row?.r2Key) {
+        return {
+          success: false,
+          errorType: "validation",
+          message: "The selected image is no longer available.",
+        };
+      }
+
+      const asset = await bucket.get(row.r2Key);
+      const mapped = await readR2ImageAsset(asset, row.r2Key);
+      if (!mapped) {
+        return {
+          success: false,
+          errorType: "validation",
+          message: "The selected image is no longer available.",
+        };
+      }
+
+      if (mapped.bytes.byteLength > MAX_REFERENCE_IMAGE_BYTES) {
+        return {
+          success: false,
+          errorType: "validation",
+          message: "Reference image must be 10MB or smaller.",
+        };
+      }
+
+      return {
+        success: true,
+        referenceImageDataUrl: buildImageDataUrl(mapped.contentType, mapped.bytes),
+        source: "internal-history-asset",
+      };
+    }
+
+    const sourceR2Key = await getProductShootRunSourceR2Key(
+      args.db,
+      args.userId,
+      internalTarget.runId,
+    );
+    if (!sourceR2Key) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "The selected source image is no longer available.",
+      };
+    }
+
+    const sourceAsset = await bucket.get(sourceR2Key);
+    const mappedSource = await readR2ImageAsset(sourceAsset, sourceR2Key);
+    if (!mappedSource) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "The selected source image is no longer available.",
+      };
+    }
+
+    if (mappedSource.bytes.byteLength > MAX_REFERENCE_IMAGE_BYTES) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Reference image must be 10MB or smaller.",
+      };
+    }
+
+    return {
+      success: true,
+      referenceImageDataUrl: buildImageDataUrl(mappedSource.contentType, mappedSource.bytes),
+      source: "internal-run-source",
+    };
+  }
+
+  if (isDisallowedExternalReferenceHost(referenceUrl.hostname)) {
+    return {
+      success: false,
+      errorType: "validation",
+      message:
+        "referenceImageUrl host is not allowed. Use an uploaded image or a public image URL.",
+    };
+  }
+
+  const externalAsset = await fetchExternalImageAsset(referenceUrl);
+  if (!externalAsset.success) {
+    return externalAsset;
+  }
+
+  return {
+    success: true,
+    referenceImageDataUrl: buildImageDataUrl(externalAsset.contentType, externalAsset.bytes),
+    source: "external-url",
+  };
+}
+
+function parseInternalReferenceTarget(
+  referenceUrl: URL,
+  requestUrl: URL,
+):
+  | { kind: "history-asset"; generationId: string }
+  | { kind: "run-source"; runId: string }
+  | null {
+  if (!isSameServiceOrigin(referenceUrl, requestUrl)) {
+    return null;
+  }
+
+  const historyMatch = INTERNAL_HISTORY_ASSET_PATH_PATTERN.exec(referenceUrl.pathname);
+  if (historyMatch?.[1]) {
+    return { kind: "history-asset", generationId: historyMatch[1] };
+  }
+
+  const runSourceMatch = INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN.exec(referenceUrl.pathname);
+  if (runSourceMatch?.[1]) {
+    return { kind: "run-source", runId: runSourceMatch[1] };
+  }
+
+  return null;
+}
+
+function isSameServiceOrigin(referenceUrl: URL, requestUrl: URL): boolean {
+  if (referenceUrl.origin === requestUrl.origin) {
+    return true;
+  }
+
+  const referencePort = normalizePort(referenceUrl);
+  const requestPort = normalizePort(requestUrl);
+  if (referencePort !== requestPort) {
+    return false;
+  }
+
+  return (
+    isLoopbackHost(referenceUrl.hostname.toLowerCase()) &&
+    isLoopbackHost(requestUrl.hostname.toLowerCase())
+  );
+}
+
+function normalizePort(url: URL): string {
+  if (url.port) {
+    return url.port;
+  }
+  return url.protocol === "https:" ? "443" : "80";
+}
+
+function isLoopbackHost(hostname: string): boolean {
+  return hostname === "localhost" || hostname === "::1" || hostname.startsWith("127.");
+}
+
+function isDisallowedExternalReferenceHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+  if (
+    isLoopbackHost(lower) ||
+    lower === "0.0.0.0" ||
+    lower.endsWith(".localhost") ||
+    lower.endsWith(".local") ||
+    lower.endsWith(".internal")
+  ) {
+    return true;
+  }
+
+  return isIpLiteralHost(lower);
+}
+
+function isIpLiteralHost(hostname: string): boolean {
+  return isIpv4Literal(hostname) || hostname.includes(":");
+}
+
+function isIpv4Literal(hostname: string): boolean {
+  const parts = hostname.split(".");
+  if (parts.length !== 4) {
+    return false;
+  }
+
+  return parts.every((part) => {
+    if (!/^\d+$/.test(part)) {
+      return false;
+    }
+
+    const value = Number.parseInt(part, 10);
+    return value >= 0 && value <= 255;
+  });
+}
+
+async function fetchExternalImageAsset(referenceUrl: URL): Promise<
+  | {
+      success: true;
+      bytes: Uint8Array;
+      contentType: string;
+    }
+  | {
+      success: false;
+      errorType: "validation";
+      message: string;
+    }
+> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REFERENCE_IMAGE_FETCH_TIMEOUT_MS);
+
+  try {
+    let currentUrl = new URL(referenceUrl.toString());
+    let response: Response | null = null;
+
+    for (let redirects = 0; redirects <= MAX_REFERENCE_IMAGE_REDIRECTS; redirects += 1) {
+      response = await fetch(currentUrl.toString(), {
+        signal: controller.signal,
+        redirect: "manual",
+      });
+
+      if (isRedirectStatus(response.status)) {
+        if (redirects === MAX_REFERENCE_IMAGE_REDIRECTS) {
+          return {
+            success: false,
+            errorType: "validation",
+            message: "referenceImageUrl has too many redirects.",
+          };
+        }
+
+        const location = response.headers.get("location");
+        if (!location) {
+          return {
+            success: false,
+            errorType: "validation",
+            message: "referenceImageUrl redirect is missing a location header.",
+          };
+        }
+
+        let nextUrl: URL;
+        try {
+          nextUrl = new URL(location, currentUrl);
+        } catch {
+          return {
+            success: false,
+            errorType: "validation",
+            message: "referenceImageUrl redirect target is invalid.",
+          };
+        }
+
+        if (nextUrl.protocol !== "http:" && nextUrl.protocol !== "https:") {
+          return {
+            success: false,
+            errorType: "validation",
+            message: "referenceImageUrl redirect target must use http or https.",
+          };
+        }
+
+        if (isDisallowedExternalReferenceHost(nextUrl.hostname)) {
+          return {
+            success: false,
+            errorType: "validation",
+            message:
+              "referenceImageUrl redirect target host is not allowed. Use a public image URL.",
+          };
+        }
+
+        currentUrl = nextUrl;
+        continue;
+      }
+
+      break;
+    }
+
+    if (!response) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Could not download reference image from URL.",
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Could not download reference image from URL.",
+      };
+    }
+
+    const contentLength = Number.parseInt(response.headers.get("content-length") || "", 10);
+    if (Number.isFinite(contentLength) && contentLength > MAX_REFERENCE_IMAGE_BYTES) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Reference image must be 10MB or smaller.",
+      };
+    }
+
+    const contentType =
+      normalizeImageContentType(response.headers.get("content-type")) ??
+      inferImageContentTypeFromPath(currentUrl.pathname);
+    if (!contentType) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "referenceImageUrl must point to an image resource.",
+      };
+    }
+
+    const bytes = await readResponseBytesWithLimit(response, MAX_REFERENCE_IMAGE_BYTES);
+    if (!bytes) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Reference image must be 10MB or smaller.",
+      };
+    }
+
+    if (bytes.byteLength === 0) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Could not read reference image bytes.",
+      };
+    }
+
+    if (bytes.byteLength > MAX_REFERENCE_IMAGE_BYTES) {
+      return {
+        success: false,
+        errorType: "validation",
+        message: "Reference image must be 10MB or smaller.",
+      };
+    }
+
+    return {
+      success: true,
+      bytes,
+      contentType,
+    };
+  } catch {
+    return {
+      success: false,
+      errorType: "validation",
+      message: "Could not download reference image from URL.",
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function readR2ImageAsset(
+  asset: R2ObjectBody | null,
+  key: string,
+): Promise<{ bytes: Uint8Array; contentType: string } | null> {
+  if (!asset?.body) {
+    return null;
+  }
+  if (asset.size > MAX_REFERENCE_IMAGE_BYTES) {
+    return null;
+  }
+
+  const contentType =
+    normalizeImageContentType(asset.httpMetadata?.contentType) ??
+    inferImageContentTypeFromPath(key);
+  if (!contentType) {
+    return null;
+  }
+
+  const bytes = new Uint8Array(await asset.arrayBuffer());
+  if (bytes.byteLength === 0) {
+    return null;
+  }
+
+  return { bytes, contentType };
+}
+
+async function readResponseBytesWithLimit(
+  response: Response,
+  maxBytes: number,
+): Promise<Uint8Array | null> {
+  if (!response.body) {
+    return null;
+  }
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    if (!value) {
+      continue;
+    }
+
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+
+    chunks.push(value);
+  }
+
+  const output = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    output.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return output;
+}
+
+function isRedirectStatus(status: number): boolean {
+  return status === 301 || status === 302 || status === 303 || status === 307 || status === 308;
+}
+
+function normalizeImageContentType(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const normalized = value.split(";")[0]?.trim().toLowerCase();
+  if (!normalized || !normalized.startsWith("image/")) {
+    return null;
+  }
+
+  const canonical = REFERENCE_IMAGE_CONTENT_TYPE_ALIASES[normalized] ?? normalized;
+  if (!SUPPORTED_REFERENCE_IMAGE_CONTENT_TYPES.has(canonical)) {
+    return null;
+  }
+
+  return canonical;
+}
+
+function inferImageContentTypeFromPath(pathname: string): string | null {
+  const value = pathname.toLowerCase();
+  if (value.endsWith(".png")) return "image/png";
+  if (value.endsWith(".jpg") || value.endsWith(".jpeg")) return "image/jpeg";
+  if (value.endsWith(".webp")) return "image/webp";
+  if (value.endsWith(".gif")) return "image/gif";
+  if (value.endsWith(".bmp")) return "image/bmp";
+  if (value.endsWith(".tif") || value.endsWith(".tiff")) return "image/tiff";
+  return null;
+}
+
+function parseImageDataUrl(value: string): { bytes: Uint8Array; contentType: string } | null {
+  const match = /^data:([^;,]+)?;base64,([\s\S]+)$/i.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  const contentType = normalizeImageContentType(match[1]?.trim().toLowerCase() ?? "");
+  if (!contentType) {
+    return null;
+  }
+
+  const base64Payload = match[2]?.replace(/\s/g, "");
+  if (!base64Payload) {
+    return null;
+  }
+
+  const approxByteLength = Math.floor((base64Payload.length * 3) / 4);
+  if (approxByteLength > MAX_REFERENCE_IMAGE_BYTES) {
+    return null;
+  }
+
+  try {
+    const binary = atob(base64Payload);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+    return { bytes, contentType };
+  } catch {
+    return null;
+  }
+}
+
+function buildImageDataUrl(contentType: string, bytes: Uint8Array): string {
+  return `data:${contentType};base64,${Buffer.from(bytes).toString("base64")}`;
 }
 
 function toIsoString(value: Date | null): string | null {
@@ -1093,6 +2080,78 @@ async function safelyRefundCredit(args: {
 
 function readString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+}
+
+function parseProductShootContext(payload: unknown): ProductShootContext | null {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  return readProductShootContext(payload);
+}
+
+function readProductShootContext(value: unknown): ProductShootContext | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const candidate = value.productShootContext;
+  if (!isRecord(candidate)) {
+    return null;
+  }
+
+  const runId = normalizeRequiredContextString(candidate.runId);
+  const templateId = normalizeRequiredContextString(candidate.templateId);
+  const templateLabel = normalizeRequiredContextString(candidate.templateLabel);
+  const selectedTemplates = normalizeTemplateSnapshots(candidate.selectedTemplates);
+
+  if (!runId || !templateId || !templateLabel || selectedTemplates.length === 0) {
+    return null;
+  }
+
+  const aspectRatioId = readString(candidate.aspectRatioId);
+
+  return {
+    runId,
+    templateId,
+    templateLabel,
+    selectedTemplates,
+    ...(aspectRatioId ? { aspectRatioId } : {}),
+  };
+}
+
+function normalizeTemplateSnapshots(value: unknown): ProductShootTemplateSnapshot[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  const seen = new Set<string>();
+  const items: ProductShootTemplateSnapshot[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+
+    const id = normalizeRequiredContextString(entry.id);
+    const label = normalizeRequiredContextString(entry.label);
+    if (!id || !label || seen.has(id)) {
+      continue;
+    }
+
+    seen.add(id);
+    items.push({ id, label });
+  }
+
+  return items;
+}
+
+function normalizeRequiredContextString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function serializeReferenceForHistory(reference: string): string {

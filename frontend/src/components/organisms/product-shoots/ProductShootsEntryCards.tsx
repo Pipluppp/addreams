@@ -17,14 +17,14 @@ export function ProductShootsEntryCards({
           badge: "Guided",
           emphasized: true,
           illustration: {
-            label: "Photoshoot",
+            label: "Product Shoots",
             gradientFrom: "#FFE8D9",
             gradientTo: "#DFECFF",
           },
-          title: "Create a product photoshoot",
+          title: "Create product shoots",
           description:
             "Upload your product image, select templates, and generate polished campaign-ready variations.",
-          actionLabel: "Start Guided Photoshoot",
+          actionLabel: "Start Guided Product Shoots",
           onPress: onStartGuided,
         },
         {

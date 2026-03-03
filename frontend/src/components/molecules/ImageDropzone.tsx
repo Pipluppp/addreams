@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import { cn } from "../../lib/cn";
 
 type ImageDropzoneProps = {
@@ -35,12 +36,23 @@ export function ImageDropzone({ onFileSelected, error, buttonId, panelClassName 
         }}
       />
       <div
+        id={buttonId}
+        role="button"
+        tabIndex={0}
+        aria-label="Upload reference image"
         className={cn(
-          "flex min-h-40 flex-col items-center justify-center gap-2 rounded-lg px-4 py-6 text-center",
+          "flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-lg px-4 py-6 text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
           isActive ? "bg-accent-highlight-soft" : "bg-surface-alt",
           error && "bg-[color-mix(in_srgb,var(--color-error)_8%,var(--color-surface-alt))]",
           panelClassName,
         )}
+        onClick={openFileDialog}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openFileDialog();
+          }
+        }}
         onDragOver={(event) => {
           event.preventDefault();
           setIsActive(true);
@@ -55,16 +67,9 @@ export function ImageDropzone({ onFileSelected, error, buttonId, panelClassName 
           }
         }}
       >
-        <p className="text-sm font-medium text-ink">Drop an image here</p>
-        <p className="text-xs text-ink-muted">JPG, PNG, BMP, WEBP, TIFF, GIF up to 10MB</p>
-        <button
-          id={buttonId}
-          type="button"
-          onClick={openFileDialog}
-          className="mt-1 rounded-xl bg-surface px-3 py-1 text-xs font-semibold uppercase tracking-[0.08em] text-ink transition-colors duration-200 hover:bg-accent-highlight-soft hover:text-accent-primary"
-        >
-          Choose file
-        </button>
+        <span className="inline-flex size-12 items-center justify-center rounded-full border border-studio-border bg-studio-surface text-studio-text shadow-sm">
+          <Plus className="size-6" aria-hidden="true" />
+        </span>
       </div>
       {error ? <p className="text-xs text-error" role="alert">{error}</p> : null}
     </div>

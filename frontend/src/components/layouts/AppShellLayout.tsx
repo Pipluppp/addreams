@@ -55,15 +55,15 @@ function UserMenu() {
     <Dropdown>
       <Dropdown.Trigger
         aria-label="User menu"
-        className="flex h-11 max-w-[15rem] min-w-0 items-center gap-2 rounded-xl border border-border bg-surface px-2.5 py-1.5 text-left shadow-none hover:bg-surface-alt"
+        className="flex h-8 max-w-[12.5rem] min-w-0 items-center gap-1.5 rounded-xl border border-border bg-surface px-2 py-1 text-left shadow-none hover:bg-surface-alt"
       >
-        <Avatar className="size-8 shrink-0 rounded-lg">
+        <Avatar className="size-6 shrink-0 rounded-md">
           {user.image ? (
             <Avatar.Image alt={displayName} src={user.image} />
           ) : null}
           <Avatar.Fallback>{getInitials(displayName)}</Avatar.Fallback>
         </Avatar>
-        <span className="truncate text-sm font-medium leading-none text-ink">{displayName}</span>
+        <span className="truncate text-xs font-medium leading-none text-ink">{displayName}</span>
       </Dropdown.Trigger>
       <Dropdown.Popover>
         <Dropdown.Menu

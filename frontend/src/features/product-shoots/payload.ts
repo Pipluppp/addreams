@@ -3,6 +3,7 @@ import type { ProductShootsFormValues } from "./schema";
 
 export type ProductShootsGenerationValues = ProductShootsFormValues & {
   referenceImageUrl: string;
+  productShootContext?: ProductShootsRequest["productShootContext"];
 };
 
 export function buildProductShootsPayload(values: ProductShootsGenerationValues): ProductShootsRequest {
@@ -14,6 +15,7 @@ export function buildProductShootsPayload(values: ProductShootsGenerationValues)
     prompt,
     referenceImageUrl,
     model: "image-edit-latest",
+    ...(values.productShootContext ? { productShootContext: values.productShootContext } : {}),
     input: {
       messages: [
         {

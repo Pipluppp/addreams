@@ -195,7 +195,7 @@ export function composeGuidedPrompt(
     .filter((seed): seed is string => Boolean(seed));
 
   const chunks = [
-    "Generate a polished product photoshoot image for an ecommerce campaign.",
+    "Generate a polished product shoot image for an ecommerce campaign.",
     selectedSeeds.length ? `Template directions: ${selectedSeeds.join("; ")}.` : "",
     trimmedPrompt ? `Creative direction: ${trimmedPrompt}.` : "",
     referenceHint ? `Reference context: ${referenceHint}.` : "",

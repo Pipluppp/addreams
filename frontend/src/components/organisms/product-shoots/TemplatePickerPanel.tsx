@@ -46,7 +46,7 @@ export function TemplatePickerPanel({
                 <p className="accent-type text-[10px] uppercase tracking-[0.16em] text-studio-text-muted">
                   PS-TEMPLATE-PICKER
                 </p>
-                <h3 className="ui-title text-studio-text">Photoshoot templates</h3>
+                <h3 className="ui-title text-studio-text">Product shoot templates</h3>
               </div>
               <div className="flex items-center gap-2">
                 <SelectionCounterChip selectedCount={selectedCount} maxCount={maxTemplateCount} />

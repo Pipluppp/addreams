@@ -12,6 +12,13 @@
       "migrations_dir": "drizzle"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "GENERATIONS_BUCKET",
+      "bucket_name": "addreams-generations-staging",
+      "remote": true
+    }
+  ],
   "vars": {
     "BETTER_AUTH_URL": "https://addreams-web.duncanb013.workers.dev",
     "TRUSTED_ORIGINS": "https://addreams-web.duncanb013.workers.dev"

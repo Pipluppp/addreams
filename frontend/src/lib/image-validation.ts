@@ -4,10 +4,16 @@ export const MAX_IMAGE_BYTES = 10 * MEGABYTE;
 
 export const ACCEPTED_IMAGE_MIME_TYPES = new Set([
   "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
   "image/png",
   "image/bmp",
+  "image/x-ms-bmp",
+  "image/x-bmp",
   "image/webp",
   "image/tiff",
+  "image/tif",
+  "image/x-tiff",
   "image/gif",
 ]);
 

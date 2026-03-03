@@ -37,6 +37,16 @@ export type ProductShootsRequest = {
   prompt: string;
   referenceImageUrl: string;
   model: string;
+  productShootContext?: {
+    runId: string;
+    templateId: string;
+    templateLabel: string;
+    selectedTemplates: Array<{
+      id: string;
+      label: string;
+    }>;
+    aspectRatioId?: string;
+  };
   input: {
     messages: [QwenMessage];
   };
@@ -136,6 +146,44 @@ export type HistoryDetailResponse = {
 export type HistoryDeleteResponse = {
   id: string;
   deleted: boolean;
+};
+
+export type ProductShootRunTemplate = {
+  id: string;
+  label: string;
+};
+
+export type ProductShootRunOutput = {
+  generationId: string;
+  templateId: string;
+  templateLabel: string;
+  imageUrl: string | null;
+  createdAt: string | null;
+};
+
+export type ProductShootRun = {
+  runId: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  sourceImageUrl: string | null;
+  templates: ProductShootRunTemplate[];
+  outputCount: number;
+  outputs: ProductShootRunOutput[];
+  aspectRatioId: string | null;
+};
+
+export type ProductShootRunsListResponse = {
+  items: ProductShootRun[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    nextOffset: number | null;
+  };
+};
+
+export type ProductShootRunDetailResponse = {
+  item: ProductShootRun;
 };
 
 export function isWorkflowCompletedResponse(
@@ -297,6 +345,16 @@ export function createApiClient(baseUrl: string) {
       requestJson<HistoryDeleteResponse>(baseUrl, `/history/${encodeURIComponent(id)}`, {
         method: "DELETE",
       }),
+    listProductShootRuns: (params?: { limit?: number; offset?: number }) =>
+      requestJson<ProductShootRunsListResponse>(
+        baseUrl,
+        `/product-shoots/runs${params ? buildProductShootRunsQuery(params) : ""}`,
+      ),
+    getProductShootRun: (runId: string) =>
+      requestJson<ProductShootRunDetailResponse>(
+        baseUrl,
+        `/product-shoots/runs/${encodeURIComponent(runId)}`,
+      ),
   };
 }
 
@@ -325,6 +383,19 @@ function buildHistoryQuery(params: {
   }
   if (params.status) {
     search.set("status", params.status);
+  }
+
+  const query = search.toString();
+  return query ? `?${query}` : "";
+}
+
+function buildProductShootRunsQuery(params: { limit?: number; offset?: number }): string {
+  const search = new URLSearchParams();
+  if (typeof params.limit === "number") {
+    search.set("limit", String(params.limit));
+  }
+  if (typeof params.offset === "number") {
+    search.set("offset", String(params.offset));
   }
 
   const query = search.toString();

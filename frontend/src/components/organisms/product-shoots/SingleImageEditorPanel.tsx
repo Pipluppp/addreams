@@ -1,4 +1,5 @@
 import { Button, Skeleton, Spinner } from "@heroui/react";
+import { Download, Trash2 } from "lucide-react";
 import type { ProductShootsOutputItem } from "../../../features/product-shoots/state";
 import { TextareaField } from "../../atoms/TextareaField";
 import { AspectRatioChipSelect } from "../../studio/AspectRatioChipSelect";
@@ -10,6 +11,7 @@ type AspectOption = {
 
 type SingleImageEditorPanelProps = {
   sourceImageUrl: string | null;
+  isSourceSelected: boolean;
   selectedTemplateLabels: string[];
   outputs: ProductShootsOutputItem[];
   selectedOutputId: string | null;
@@ -20,15 +22,19 @@ type SingleImageEditorPanelProps = {
   canGenerate: boolean;
   error: string | null;
   pendingIterationLabels: string[];
+  onSelectSource: () => void;
   onSelectOutput: (imageId: string) => void;
   onEditPromptChange: (value: string) => void;
   onAspectRatioChange: (value: string) => void;
   onGenerate: () => void;
   onDownload: () => void;
+  onDeleteSelected: () => void;
+  canDeleteSelected: boolean;
 };
 
 export function SingleImageEditorPanel({
   sourceImageUrl,
+  isSourceSelected,
   selectedTemplateLabels,
   outputs,
   selectedOutputId,
@@ -39,13 +45,22 @@ export function SingleImageEditorPanel({
   canGenerate,
   error,
   pendingIterationLabels,
+  onSelectSource,
   onSelectOutput,
   onEditPromptChange,
   onAspectRatioChange,
   onGenerate,
   onDownload,
+  onDeleteSelected,
+  canDeleteSelected,
 }: SingleImageEditorPanelProps) {
-  const selectedOutput = outputs.find((output) => output.id === selectedOutputId) ?? outputs[0] ?? null;
+  const selectedOutput = outputs.find((output) => output.id === selectedOutputId) ?? null;
+  const selectedPreviewImage = isSourceSelected
+    ? sourceImageUrl
+    : (selectedOutput?.url ?? sourceImageUrl);
+  const selectedPreviewLabel = isSourceSelected
+    ? "Source product"
+    : (selectedOutput?.label ?? "Generated output");
 
   return (
     <section className="space-y-4">
@@ -54,7 +69,15 @@ export function SingleImageEditorPanel({
           <h3 className="text-sm font-semibold text-studio-text">Source</h3>
           {sourceImageUrl ? (
             <div className="flex">
-              <div className="inline-block max-w-full overflow-hidden rounded-xl border border-studio-border bg-studio-surface">
+              <button
+                type="button"
+                onClick={onSelectSource}
+                disabled={isPending}
+                aria-label="Use source image for editing"
+                className={`inline-block max-w-full overflow-hidden rounded-xl border bg-studio-surface text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-accent/70 ${
+                  isSourceSelected ? "border-studio-accent" : "border-studio-border"
+                }`}
+              >
                 <img
                   src={sourceImageUrl}
                   alt="Source product"
@@ -62,7 +85,7 @@ export function SingleImageEditorPanel({
                   height={640}
                   className="block h-auto max-h-80 w-auto max-w-full object-contain"
                 />
-              </div>
+              </button>
             </div>
           ) : (
             <div className="grid aspect-square place-items-center rounded-xl border border-studio-border bg-studio-surface text-xs text-studio-text-muted">
@@ -84,11 +107,11 @@ export function SingleImageEditorPanel({
         </aside>
 
         <section className="space-y-3">
-          <div className="relative overflow-hidden rounded-xl border border-studio-border bg-studio-surface-alt">
-            {selectedOutput ? (
+          <div className="group relative overflow-hidden rounded-xl border border-studio-border bg-studio-surface-alt">
+            {selectedPreviewImage ? (
               <img
-                src={selectedOutput.url}
-                alt={selectedOutput.label}
+                src={selectedPreviewImage}
+                alt={selectedPreviewLabel}
                 width={1400}
                 height={1400}
                 className="max-h-[68vh] w-full object-contain"
@@ -106,6 +129,29 @@ export function SingleImageEditorPanel({
               </div>
             )}
 
+            {selectedPreviewImage && !isPending ? (
+              <div className="pointer-events-none absolute right-3 top-3 flex items-center gap-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                <button
+                  type="button"
+                  onClick={onDownload}
+                  aria-label="Download selected image"
+                  className="pointer-events-auto inline-flex size-8 items-center justify-center rounded-full border border-white/45 bg-black/50 text-white transition hover:bg-black/68 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-accent/70"
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                </button>
+                {canDeleteSelected ? (
+                  <button
+                    type="button"
+                    onClick={onDeleteSelected}
+                    aria-label="Delete selected image"
+                    className="pointer-events-auto inline-flex size-8 items-center justify-center rounded-full border border-white/45 bg-black/50 text-white transition hover:bg-black/68 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-accent/70"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
             {isPending ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-studio-surface/70 backdrop-blur-sm">
                 <Spinner size="lg" color="accent" />
@@ -113,12 +159,6 @@ export function SingleImageEditorPanel({
               </div>
             ) : null}
           </div>
-
-          {selectedOutput ? (
-            <Button type="button" variant="ghost" onPress={onDownload} isDisabled={isPending}>
-              Download Selected
-            </Button>
-          ) : null}
         </section>
 
         <aside className="space-y-3">
@@ -146,15 +186,8 @@ export function SingleImageEditorPanel({
             isDisabled={!canGenerate}
             isPending={isPending}
           >
-            {outputs.length ? "Generate Next" : "Generate"}
+            Generate
           </Button>
-
-          {pendingIterationLabels.length > 0 ? (
-            <div className="inline-flex items-center gap-2 rounded-full border border-studio-border bg-studio-surface px-3 py-1 text-xs text-studio-text-muted">
-              <Spinner size="sm" color="accent" />
-              <span>Building {pendingIterationLabels.length} template outputs...</span>
-            </div>
-          ) : null}
         </aside>
       </div>
 
@@ -176,7 +209,7 @@ export function SingleImageEditorPanel({
             ))}
 
             {outputs.map((output, index) => {
-              const isSelected = selectedOutput?.id === output.id;
+              const isSelected = !isSourceSelected && selectedOutputId === output.id;
               return (
                 <button
                   key={output.id}
