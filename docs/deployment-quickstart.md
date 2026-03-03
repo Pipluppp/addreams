@@ -10,13 +10,13 @@ This is the current deployment runbook for Addreams.
 ## How Runtime API Routing Works
 
 - Backend API routes are under `/api/*`.
-- On `addreams-web.*.workers.dev`, frontend runtime infers API base as:
-  - `https://addreams-api.<subdomain>.workers.dev/api`
-- In local dev, frontend uses `/api` and Vite/Worker dev proxy behavior.
+- Frontend browser requests must always use same-origin `/api/*`.
+- `addreams-web` Worker proxies `/api/*` to the backend Worker via `API_BASE_URL`.
+- Do not point browser code directly at backend origins for auth/api/image asset requests.
 
 ## Auth/API Base URL Checklist
 
-Set these frontend env vars when you need explicit routing:
+Set these frontend env vars only when you intentionally need explicit routing:
 
 - `VITE_AUTH_BASE_URL`
 - `VITE_API_BASE_URL`
@@ -30,16 +30,16 @@ Recommended values by environment:
 - `VITE_API_BASE_URL=http://127.0.0.1:8787/api`
 
 2. workers.dev (`addreams-web.*` + `addreams-api.*`)
-- Runtime inference can work.
-- Explicit values are still safer:
-- `VITE_AUTH_BASE_URL=https://addreams-api.<subdomain>.workers.dev`
-- `VITE_API_BASE_URL=https://addreams-api.<subdomain>.workers.dev/api`
+- Recommended browser config:
+- `VITE_AUTH_BASE_URL=` (empty / unset)
+- `VITE_API_BASE_URL=/api`
+- Set `API_BASE_URL` on the frontend Worker to your backend Worker origin.
 
 3. Custom domain deployments
-- Always set explicit values.
-- Example:
-- `VITE_AUTH_BASE_URL=https://api.your-domain.com`
-- `VITE_API_BASE_URL=https://api.your-domain.com/api`
+- Keep browser config same-origin:
+- `VITE_AUTH_BASE_URL=` (empty / unset)
+- `VITE_API_BASE_URL=/api`
+- Configure frontend Worker `API_BASE_URL=https://api.your-domain.com`.
 
 Important:
 - Backend root `/` is expected to return `404 {"error":"Not found"}`.
@@ -71,21 +71,21 @@ npm run deploy:frontend
 ```bash
 curl -i https://addreams-web.duncanb013.workers.dev/
 curl -i https://addreams-api.duncanb013.workers.dev/api/health
-curl -i -X OPTIONS 'https://addreams-api.duncanb013.workers.dev/api/workflows/image-from-text' \
+curl -i -X OPTIONS 'https://addreams-web.duncanb013.workers.dev/api/workflows/image-from-reference' \
   -H 'Origin: https://addreams-web.duncanb013.workers.dev' \
   -H 'Access-Control-Request-Method: POST' \
   -H 'Access-Control-Request-Headers: content-type'
-curl -i -X POST 'https://addreams-api.duncanb013.workers.dev/api/workflows/image-from-text' \
+curl -i -X POST 'https://addreams-web.duncanb013.workers.dev/api/workflows/image-from-reference' \
   -H 'Origin: https://addreams-web.duncanb013.workers.dev' \
   -H 'Content-Type: application/json' \
-  --data '{"prompt":"smoke test"}'
+  --data '{"prompt":"smoke test","referenceImageUrl":"https://example.com/image.jpg"}'
 ```
 
 Expected:
 - Frontend `/` -> `200` HTML
 - Backend `/api/health` -> `200` JSON
-- Workflow preflight OPTIONS -> `204` with CORS headers
-- Workflow POST -> `202` JSON stub
+- Frontend proxied workflow OPTIONS -> `204` with CORS headers
+- Frontend proxied workflow POST -> workflow response JSON
 
 ## Common Gotcha
 

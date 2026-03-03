@@ -158,7 +158,10 @@ app.get("/api/health", (context) =>
 );
 
 // Auth middleware for protected routes
-async function requireAuth(c: Context<{ Bindings: Bindings; Variables: Variables }>, next: () => Promise<void>) {
+async function requireAuth(
+  c: Context<{ Bindings: Bindings; Variables: Variables }>,
+  next: () => Promise<void>,
+) {
   const auth = createAuth(c.env);
   const result = await auth.api.getSession({ headers: c.req.raw.headers });
   if (!result) return unauthorizedError(c);
@@ -196,8 +199,7 @@ async function getCreditBalanceSnapshot(
 ): Promise<CreditBalance> {
   const profile = await ensureUserProfile(db, userId);
   return {
-    productShoots: profile.creditsProductShoots,
-    adGraphics: profile.creditsAdGraphics,
+    imageEdits: profile.creditsImageEdits,
   };
 }
 
@@ -251,14 +253,13 @@ app.post("/api/workflows/image-from-text", async (context) => {
     return backendConfigError(context, requestId, config.message);
   }
 
-  const { reservation: creditReservation, creditsWereReserved } =
-    await reserveCreditsForWorkflow({
-      env: context.env,
-      db,
-      d1: context.env.DB,
-      userId: user.id,
-      workflow: "image-from-text",
-    });
+  const { reservation: creditReservation, creditsWereReserved } = await reserveCreditsForWorkflow({
+    env: context.env,
+    db,
+    d1: context.env.DB,
+    userId: user.id,
+    workflow: "image-from-text",
+  });
 
   if (!creditReservation.success) {
     return outOfCreditsError(context, requestId, creditReservation.balance);
@@ -310,7 +311,17 @@ app.post("/api/workflows/image-from-text", async (context) => {
       });
     }
 
-    const asset = await persistGenerationAsset(context, user.id, generationId, urls[0]);
+    let asset: Awaited<ReturnType<typeof persistGenerationAsset>> = null;
+    try {
+      asset = await persistGenerationAsset(context, user.id, generationId, urls[0]);
+    } catch (error) {
+      console.error("generation_asset_persist_failed", {
+        requestId,
+        userId: user.id,
+        generationId,
+        error: error instanceof Error ? error.message : "unknown_error",
+      });
+    }
     const usage = parseUsage(providerResponse.payload);
     const responsePayload = successPayload({
       workflow: "image-from-text",
@@ -338,16 +349,14 @@ app.post("/api/workflows/image-from-text", async (context) => {
       },
     });
 
-    return context.json(
-      responsePayload,
-      200,
-    );
+    return context.json(responsePayload, 200);
   } catch (error) {
     await safelyMarkGenerationFailed({
       db,
       userId: user.id,
       generationId,
-      errorCode: error instanceof DashScopeRequestError ? error.backendCode : "INTERNAL_SERVER_ERROR",
+      errorCode:
+        error instanceof DashScopeRequestError ? error.backendCode : "INTERNAL_SERVER_ERROR",
       errorMessage:
         error instanceof DashScopeRequestError ? error.message : "Internal server error.",
       requestId,
@@ -399,20 +408,28 @@ app.post("/api/workflows/image-from-reference", async (context) => {
     return validationError(context, requestId, resolvedReference.message);
   }
 
-  const { reservation: creditReservation, creditsWereReserved } =
-    await reserveCreditsForWorkflow({
-      env: context.env,
-      db,
-      d1: context.env.DB,
-      userId: user.id,
-      workflow: "image-from-reference",
-    });
+  const productShootContext = parseProductShootContext(body.data);
+  const productShootRunId = productShootContext?.runId ?? null;
+  const existingRunSourceR2Key = productShootRunId
+    ? await getProductShootRunSourceR2Key(db, user.id, productShootRunId)
+    : null;
+
+  if (productShootRunId && !existingRunSourceR2Key && !context.env.GENERATIONS_BUCKET) {
+    return backendConfigError(context, requestId, "GENERATIONS_BUCKET is not configured.");
+  }
+
+  const { reservation: creditReservation, creditsWereReserved } = await reserveCreditsForWorkflow({
+    env: context.env,
+    db,
+    d1: context.env.DB,
+    userId: user.id,
+    workflow: "image-from-reference",
+  });
 
   if (!creditReservation.success) {
     return outOfCreditsError(context, requestId, creditReservation.balance);
   }
 
-  const productShootContext = parseProductShootContext(body.data);
   const generationId = await createPendingGenerationRecord({
     db,
     userId: user.id,
@@ -431,6 +448,23 @@ app.post("/api/workflows/image-from-reference", async (context) => {
   });
 
   try {
+    let productShootSourceR2Key = existingRunSourceR2Key;
+    if (
+      productShootRunId &&
+      !productShootSourceR2Key &&
+      resolvedReference.source === "provided-data-url"
+    ) {
+      const persistedRunSource = await persistReferenceAsset(
+        context,
+        user.id,
+        productShootRunId,
+        resolvedReference.referenceImageDataUrl,
+      );
+      if (!persistedRunSource) {
+        throw new Error("PRODUCT_SHOOT_SOURCE_PERSISTENCE_FAILED");
+      }
+      productShootSourceR2Key = persistedRunSource.r2Key;
+    }
     const providerBody = {
       model: config.data.imageEditModel,
       input: {
@@ -473,16 +507,30 @@ app.post("/api/workflows/image-from-reference", async (context) => {
       });
     }
 
-    const asset = await persistGenerationAsset(context, user.id, generationId, urls[0]);
-    const sourceAsset = await persistReferenceAsset(
-      context,
-      user.id,
-      productShootContext?.runId ?? generationId,
-      resolvedReference.referenceImageDataUrl,
-    );
-    const sourceAssetUrl = sourceAsset
-      ? `/api/product-shoots/runs/${productShootContext?.runId ?? generationId}/source`
-      : null;
+    let asset: Awaited<ReturnType<typeof persistGenerationAsset>> = null;
+    try {
+      asset = await persistGenerationAsset(context, user.id, generationId, urls[0]);
+    } catch (error) {
+      console.error("generation_asset_persist_failed", {
+        requestId,
+        userId: user.id,
+        generationId,
+        error: error instanceof Error ? error.message : "unknown_error",
+      });
+    }
+    if (productShootRunId && !productShootSourceR2Key) {
+      const persistedRunSource = await persistReferenceAsset(
+        context,
+        user.id,
+        productShootRunId,
+        resolvedReference.referenceImageDataUrl,
+      );
+      if (!persistedRunSource) {
+        throw new Error("PRODUCT_SHOOT_SOURCE_PERSISTENCE_FAILED");
+      }
+      productShootSourceR2Key = persistedRunSource.r2Key;
+    }
+
     const usage = parseUsage(providerResponse.payload);
     const responsePayload = successPayload({
       workflow: "image-from-reference",
@@ -507,8 +555,11 @@ app.post("/api/workflows/image-from-reference", async (context) => {
         images: urls,
         usage,
         assetUrl: asset ? `/api/history/${generationId}/asset` : null,
-        sourceR2Key: sourceAsset?.r2Key ?? null,
-        sourceAssetUrl,
+        sourceR2Key: productShootSourceR2Key,
+        sourceAssetUrl:
+          productShootRunId && productShootSourceR2Key
+            ? `/api/product-shoots/runs/${productShootRunId}/source`
+            : null,
       },
     });
 
@@ -518,7 +569,8 @@ app.post("/api/workflows/image-from-reference", async (context) => {
       db,
       userId: user.id,
       generationId,
-      errorCode: error instanceof DashScopeRequestError ? error.backendCode : "INTERNAL_SERVER_ERROR",
+      errorCode:
+        error instanceof DashScopeRequestError ? error.backendCode : "INTERNAL_SERVER_ERROR",
       errorMessage:
         error instanceof DashScopeRequestError ? error.message : "Internal server error.",
       requestId,
@@ -554,14 +606,13 @@ app.post("/api/workflows/video-from-reference", async (context) => {
     return context.json({ error: "prompt and referenceImageUrl are required" }, 400);
   }
 
-  const { reservation: creditReservation, creditsWereReserved } =
-    await reserveCreditsForWorkflow({
-      env: context.env,
-      db,
-      d1: context.env.DB,
-      userId: user.id,
-      workflow: "video-from-reference",
-    });
+  const { reservation: creditReservation, creditsWereReserved } = await reserveCreditsForWorkflow({
+    env: context.env,
+    db,
+    d1: context.env.DB,
+    userId: user.id,
+    workflow: "video-from-reference",
+  });
 
   if (!creditReservation.success) {
     return outOfCreditsError(context, requestId, creditReservation.balance);
@@ -658,7 +709,7 @@ app.get("/api/history", requireAuth, async (context) => {
   const nextOffset = offset + rows.length < total ? offset + limit : null;
 
   return context.json({
-    items: rows.map((row) => mapHistorySummary(row, context.req.url)),
+    items: rows.map((row) => mapHistorySummary(row)),
     pagination: {
       limit,
       offset,
@@ -678,7 +729,7 @@ app.get("/api/history/:id", requireAuth, async (context) => {
     return context.json({ error: "History item not found." }, 404);
   }
 
-  return context.json({ item: mapHistoryDetail(row, context.req.url) });
+  return context.json({ item: mapHistoryDetail(row) });
 });
 
 app.get("/api/history/:id/asset", requireAuth, async (context) => {
@@ -758,7 +809,7 @@ app.get("/api/product-shoots/runs", requireAuth, async (context) => {
     .orderBy(desc(schema.generation.createdAt))
     .limit(400);
 
-  const groupedRuns = groupProductShootRuns(rows, context.req.url);
+  const groupedRuns = groupProductShootRuns(rows);
   const pagedRuns = groupedRuns.slice(offset, offset + limit);
   const nextOffset = offset + pagedRuns.length < groupedRuns.length ? offset + limit : null;
 
@@ -791,7 +842,7 @@ app.get("/api/product-shoots/runs/:runId", requireAuth, async (context) => {
     .orderBy(desc(schema.generation.createdAt))
     .limit(400);
 
-  const groupedRuns = groupProductShootRuns(rows, context.req.url);
+  const groupedRuns = groupProductShootRuns(rows);
   const run = groupedRuns.find((item) => item.runId === runId) ?? null;
   if (!run) {
     return context.json({ error: "Product shoot run not found." }, 404);
@@ -1134,12 +1185,10 @@ async function getGenerationForUser(
   });
 }
 
-function mapHistorySummary(row: HistorySummaryRow, requestUrl: string) {
+function mapHistorySummary(row: HistorySummaryRow) {
   const output = parseJsonText(row.outputJson);
   const fallbackImageUrl = extractFirstImageUrl(output);
-  const assetUrl = row.r2Key
-    ? new URL(`/api/history/${row.id}/asset`, requestUrl).toString()
-    : fallbackImageUrl;
+  const assetUrl = row.r2Key ? `/api/history/${row.id}/asset` : fallbackImageUrl;
 
   return {
     id: row.id,
@@ -1156,12 +1205,12 @@ function mapHistorySummary(row: HistorySummaryRow, requestUrl: string) {
   };
 }
 
-function mapHistoryDetail(row: HistorySummaryRow, requestUrl: string) {
+function mapHistoryDetail(row: HistorySummaryRow) {
   const output = parseJsonText(row.outputJson);
   const input = parseJsonText(row.inputJson);
 
   return {
-    ...mapHistorySummary(row, requestUrl),
+    ...mapHistorySummary(row),
     input,
     output,
   };
@@ -1224,10 +1273,7 @@ function extractFirstImageUrl(output: unknown): string | null {
   return null;
 }
 
-function groupProductShootRuns(
-  rows: HistorySummaryRow[],
-  requestUrl: string,
-): ProductShootRunSummary[] {
+function groupProductShootRuns(rows: HistorySummaryRow[]): ProductShootRunSummary[] {
   const groupedRuns = new Map<
     string,
     {
@@ -1257,9 +1303,8 @@ function groupProductShootRuns(
 
     const currentGroup = groupedRuns.get(contextValue.runId);
     const nextSourceImageUrl =
-      readSourceAssetUrl(parsedOutput, requestUrl) ??
-      readReferenceImageFromInput(parsedInput);
-    const outputImageUrl = resolveGenerationImageUrl(row, parsedOutput, requestUrl);
+      readSourceAssetUrl(parsedOutput) ?? readReferenceImageFromInput(parsedInput);
+    const outputImageUrl = resolveGenerationImageUrl(row, parsedOutput);
     const outputTemplateLabel = contextValue.templateLabel.trim();
 
     if (!currentGroup) {
@@ -1318,7 +1363,9 @@ function groupProductShootRuns(
 
   const groups = Array.from(groupedRuns.values());
   for (const group of groups) {
-    const templateOrderMap = new Map(group.templates.map((template, index) => [template.id, index]));
+    const templateOrderMap = new Map(
+      group.templates.map((template, index) => [template.id, index]),
+    );
     group.outputs.sort((left, right) => {
       const leftOrder = templateOrderMap.get(left.templateId) ?? Number.MAX_SAFE_INTEGER;
       const rightOrder = templateOrderMap.get(right.templateId) ?? Number.MAX_SAFE_INTEGER;
@@ -1356,19 +1403,15 @@ function groupProductShootRuns(
   }));
 }
 
-function resolveGenerationImageUrl(
-  row: HistorySummaryRow,
-  parsedOutput: unknown,
-  requestUrl: string,
-): string | null {
+function resolveGenerationImageUrl(row: HistorySummaryRow, parsedOutput: unknown): string | null {
   if (row.r2Key) {
-    return new URL(`/api/history/${row.id}/asset`, requestUrl).toString();
+    return `/api/history/${row.id}/asset`;
   }
 
   return extractFirstImageUrl(parsedOutput);
 }
 
-function readSourceAssetUrl(output: unknown, requestUrl: string): string | null {
+function readSourceAssetUrl(output: unknown): string | null {
   if (!isRecord(output)) {
     return null;
   }
@@ -1378,8 +1421,22 @@ function readSourceAssetUrl(output: unknown, requestUrl: string): string | null 
     return null;
   }
 
+  if (
+    INTERNAL_HISTORY_ASSET_PATH_PATTERN.test(value) ||
+    INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN.test(value)
+  ) {
+    return value;
+  }
+
   try {
-    return new URL(value, requestUrl).toString();
+    const parsed = new URL(value);
+    if (
+      INTERNAL_HISTORY_ASSET_PATH_PATTERN.test(parsed.pathname) ||
+      INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN.test(parsed.pathname)
+    ) {
+      return `${parsed.pathname}${parsed.search}`;
+    }
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? value : null;
   } catch {
     return null;
   }
@@ -1408,8 +1465,21 @@ function readReferenceImageFromInput(input: unknown): string | null {
     return null;
   }
 
+  if (
+    INTERNAL_HISTORY_ASSET_PATH_PATTERN.test(value) ||
+    INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN.test(value)
+  ) {
+    return value;
+  }
+
   try {
     const url = new URL(value);
+    if (
+      INTERNAL_HISTORY_ASSET_PATH_PATTERN.test(url.pathname) ||
+      INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN.test(url.pathname)
+    ) {
+      return `${url.pathname}${url.search}`;
+    }
     if (url.protocol === "http:" || url.protocol === "https:") {
       return value;
     }
@@ -1476,6 +1546,7 @@ async function resolveReferenceImageForProvider(args: {
     }
 > {
   const rawReference = args.referenceImage.trim();
+  const isRelativeReference = rawReference.startsWith("/");
   const isDataUrlCandidate = rawReference.startsWith("data:");
   const dataUrlAsset = parseImageDataUrl(rawReference);
   if (dataUrlAsset) {
@@ -1504,12 +1575,15 @@ async function resolveReferenceImageForProvider(args: {
 
   let referenceUrl: URL;
   try {
-    referenceUrl = new URL(rawReference);
+    referenceUrl = isRelativeReference
+      ? new URL(rawReference, args.requestUrl)
+      : new URL(rawReference);
   } catch {
     return {
       success: false,
       errorType: "validation",
-      message: "referenceImageUrl must be an http(s) URL or Base64 data URL.",
+      message:
+        "referenceImageUrl must be an http(s) URL, a supported internal /api URL, or Base64 data URL.",
     };
   }
 
@@ -1521,7 +1595,26 @@ async function resolveReferenceImageForProvider(args: {
     };
   }
 
-  const internalTarget = parseInternalReferenceTarget(referenceUrl, new URL(args.requestUrl));
+  const requestUrl = new URL(args.requestUrl);
+  const internalTarget = parseInternalReferenceTarget(referenceUrl, requestUrl);
+  if (isRelativeReference && !internalTarget) {
+    return {
+      success: false,
+      errorType: "validation",
+      message:
+        "Unsupported internal reference path. Use /api/history/:id/asset or /api/product-shoots/runs/:runId/source.",
+    };
+  }
+
+  if (isSameServiceOrigin(referenceUrl, requestUrl) && !internalTarget) {
+    return {
+      success: false,
+      errorType: "validation",
+      message:
+        "Unsupported internal reference URL. Use /api/history/:id/asset or /api/product-shoots/runs/:runId/source.",
+    };
+  }
+
   if (internalTarget) {
     const bucket = args.context.env.GENERATIONS_BUCKET;
     if (!bucket) {
@@ -1629,10 +1722,7 @@ async function resolveReferenceImageForProvider(args: {
 function parseInternalReferenceTarget(
   referenceUrl: URL,
   requestUrl: URL,
-):
-  | { kind: "history-asset"; generationId: string }
-  | { kind: "run-source"; runId: string }
-  | null {
+): { kind: "history-asset"; generationId: string } | { kind: "run-source"; runId: string } | null {
   if (!isSameServiceOrigin(referenceUrl, requestUrl)) {
     return null;
   }
@@ -2025,7 +2115,9 @@ function isNonEmpty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-async function parseJsonBody(context: Context): Promise<{ success: true; data: unknown } | { success: false }> {
+async function parseJsonBody(
+  context: Context,
+): Promise<{ success: true; data: unknown } | { success: false }> {
   try {
     const parsed = (await context.req.json()) as unknown;
     return { success: true, data: parsed };

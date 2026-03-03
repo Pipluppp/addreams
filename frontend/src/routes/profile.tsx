@@ -39,8 +39,7 @@ export default function ProfileRoute() {
             <Skeleton className="h-6 w-44 rounded-md" />
             <Skeleton className="h-4 w-72 rounded-md" />
           </Card>
-          <Card className="grid gap-4 p-5 sm:grid-cols-3">
-            <Skeleton className="h-20 rounded-xl" />
+          <Card className="grid gap-4 p-5 sm:grid-cols-2">
             <Skeleton className="h-20 rounded-xl" />
             <Skeleton className="h-20 rounded-xl" />
           </Card>
@@ -61,7 +60,9 @@ export default function ProfileRoute() {
         <Card className="space-y-3 p-5 sm:p-6">
           <Card.Header>
             <Card.Title>Profile</Card.Title>
-            <Card.Description>Manage account overview, credits, and active session controls.</Card.Description>
+            <Card.Description>
+              Manage account overview, credits, and active session controls.
+            </Card.Description>
           </Card.Header>
           {user ? (
             <div className="space-y-1 text-xs text-ink-muted">
@@ -87,17 +88,14 @@ export default function ProfileRoute() {
           </Alert>
         ) : null}
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <SummaryCard title="Account Type">
             <Chip color={profile?.accountType === "paid" ? "accent" : "default"} variant="soft">
               {profile?.accountType ?? "free"}
             </Chip>
           </SummaryCard>
-          <SummaryCard title="Product Shoots Credits">
-            <p className="text-2xl font-semibold text-ink">{profile?.creditsProductShoots ?? 0}</p>
-          </SummaryCard>
-          <SummaryCard title="Ad Graphics Credits">
-            <p className="text-2xl font-semibold text-ink">{profile?.creditsAdGraphics ?? 0}</p>
+          <SummaryCard title="Image Edit Credits">
+            <p className="text-2xl font-semibold text-ink">{profile?.creditsImageEdits ?? 0}</p>
           </SummaryCard>
         </div>
 
@@ -118,7 +116,8 @@ export default function ProfileRoute() {
           <Alert.Content>
             <Alert.Title>Email verification status</Alert.Title>
             <Alert.Description>
-              Email verification is currently disabled; account email ownership is not guaranteed yet.
+              Email verification is currently disabled; account email ownership is not guaranteed
+              yet.
             </Alert.Description>
           </Alert.Content>
         </Alert>

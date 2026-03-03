@@ -14,7 +14,6 @@ describe("buildProductShootsPayload", () => {
       referenceImageUrl,
     });
 
-    expect(payload.model).toBe("image-edit-latest");
     expect(payload.referenceImageUrl).toBe(referenceImageUrl);
     expect(payload.input.messages[0]?.content[0]).toEqual({
       type: "image",

@@ -16,6 +16,9 @@ const LEGACY_TEXT_SIZE_REMAP: Record<string, (typeof TEXT_IMAGE_ALLOWED_SIZES)[n
 
 const DATA_URL_PATTERN = /^data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=\s]+$/i;
 const EDIT_SIZE_PATTERN = /^(\d+)\*(\d+)$/;
+const INTERNAL_HISTORY_ASSET_PATH_PATTERN = /^\/api\/history\/[^/]+\/asset\/?$/;
+const INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN =
+  /^\/api\/product-shoots\/runs\/[^/]+\/source\/?$/;
 
 const contentPartSchema = z
   .object({
@@ -87,7 +90,7 @@ export type NormalizedImageFromTextInput = {
 export type NormalizedImageFromReferenceInput = {
   prompt: string;
   referenceImage: string;
-  n: number;
+  n: 1;
   size?: string;
   negativePrompt?: string;
   seed?: number;
@@ -160,10 +163,7 @@ export function normalizeImageFromReferencePayload(
 
   const explicitReference = normalizeString(data.referenceImageUrl);
   const contentReferences = extractImageParts(content);
-  const allReferences = [
-    ...(explicitReference ? [explicitReference] : []),
-    ...contentReferences,
-  ];
+  const allReferences = [...(explicitReference ? [explicitReference] : []), ...contentReferences];
   const references = Array.from(new Set(allReferences));
 
   if (references.length === 0) {
@@ -181,13 +181,14 @@ export function normalizeImageFromReferencePayload(
   if (!isValidReferenceImage(referenceImage)) {
     return {
       success: false,
-      message: "referenceImageUrl must be an http(s) URL or Base64 data URL.",
+      message:
+        "referenceImageUrl must be an http(s) URL, a supported internal /api URL, or Base64 data URL.",
     };
   }
 
   const n = data.parameters?.n ?? data.n ?? 1;
-  if (!Number.isInteger(n) || n < 1 || n > 6) {
-    return { success: false, message: "parameters.n must be between 1 and 6." };
+  if (n !== 1) {
+    return { success: false, message: "parameters.n must be 1 for image-from-reference." };
   }
 
   const size = normalizeString(data.parameters?.size ?? data.size);
@@ -203,7 +204,7 @@ export function normalizeImageFromReferencePayload(
     data: {
       prompt,
       referenceImage,
-      n,
+      n: 1,
       size,
       negativePrompt: normalizeString(
         data.parameters?.negative_prompt ?? data.negative_prompt ?? data.negativePrompt,
@@ -240,6 +241,13 @@ function isValidEditSize(size: string): boolean {
 function isValidReferenceImage(value: string): boolean {
   if (DATA_URL_PATTERN.test(value)) {
     return true;
+  }
+
+  if (value.startsWith("/")) {
+    return (
+      INTERNAL_HISTORY_ASSET_PATH_PATTERN.test(value) ||
+      INTERNAL_PRODUCT_SHOOT_SOURCE_PATH_PATTERN.test(value)
+    );
   }
 
   try {

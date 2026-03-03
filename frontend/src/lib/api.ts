@@ -29,14 +29,11 @@ export type BaseWorkflowParameters = {
 
 export type ProductShootsParameters = BaseWorkflowParameters & {
   size?: QwenSizePreset | `${number}*${number}`;
-  output_format: OutputFormat;
-  response_format?: "url" | "b64_json";
 };
 
 export type ProductShootsRequest = {
   prompt: string;
   referenceImageUrl: string;
-  model: string;
   productShootContext?: {
     runId: string;
     templateId: string;
@@ -60,7 +57,6 @@ export type AdGraphicsParameters = BaseWorkflowParameters & {
 export type AdGraphicsRequest = {
   prompt: string;
   referenceImageUrl: string;
-  model: string;
   input: {
     messages: [QwenMessage];
   };
@@ -86,8 +82,7 @@ export type WorkflowSuccessResponse = {
     expiresInHours: number;
   };
   credits: {
-    productShoots: number;
-    adGraphics: number;
+    imageEdits: number;
   };
   usage?: {
     imageCount?: number;
@@ -102,8 +97,7 @@ export type WorkflowLegacyStubResponse = {
   requestId: string;
   generationId?: string;
   credits?: {
-    productShoots: number;
-    adGraphics: number;
+    imageEdits: number;
   };
   receivedAt?: string;
 };
@@ -321,14 +315,10 @@ export function createApiClient(baseUrl: string) {
         },
       ),
     submitAdGraphics: (payload: AdGraphicsRequest) =>
-      requestJson<WorkflowResponse, AdGraphicsRequest>(
-        baseUrl,
-        "/workflows/image-from-reference",
-        {
-          method: "POST",
-          body: payload,
-        },
-      ),
+      requestJson<WorkflowResponse, AdGraphicsRequest>(baseUrl, "/workflows/image-from-reference", {
+        method: "POST",
+        body: payload,
+      }),
     listHistory: (params?: {
       limit?: number;
       offset?: number;

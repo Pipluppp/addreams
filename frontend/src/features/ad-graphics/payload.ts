@@ -3,8 +3,7 @@ import { fileToDataUrl } from "../../lib/image-validation";
 import type { AdGraphicsFormValues } from "./schema";
 
 const PEOPLE_PATTERN = /\b(person|model|woman|man|couple|family|portrait)\b/i;
-const PEOPLE_NEGATIVE_SUFFIX =
-  "different ethnicity, different hair color, different face shape";
+const PEOPLE_NEGATIVE_SUFFIX = "different ethnicity, different hair color, different face shape";
 
 export function augmentNegativePrompt(base: string, prompt: string): string {
   if (!PEOPLE_PATTERN.test(prompt)) {
@@ -50,7 +49,6 @@ export async function buildAdGraphicsPayload(
   return {
     prompt,
     referenceImageUrl,
-    model: "image-edit-latest",
     input: {
       messages: [
         {

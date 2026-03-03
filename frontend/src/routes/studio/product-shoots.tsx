@@ -21,7 +21,10 @@ import {
   productShootsTemplateSelectionAtom,
   type ProductShootsOutputItem,
 } from "../../features/product-shoots/state";
-import { PRODUCT_SHOOTS_ASPECT_RATIOS, getAspectRatioOption } from "../../features/product-shoots/aspect-ratios";
+import {
+  PRODUCT_SHOOTS_ASPECT_RATIOS,
+  getAspectRatioOption,
+} from "../../features/product-shoots/aspect-ratios";
 import {
   PRODUCT_SHOOTS_TEMPLATE_CAP,
   PRODUCT_SHOOTS_TEMPLATES,
@@ -61,7 +64,13 @@ function mapWorkflowImages(
     id: crypto.randomUUID(),
     url: image.url,
     source,
-    label: labelBase ? (images.length > 1 ? `${labelBase} ${index + 1}` : labelBase) : source === "guided" ? `Output ${index + 1}` : `Edit ${index + 1}`,
+    label: labelBase
+      ? images.length > 1
+        ? `${labelBase} ${index + 1}`
+        : labelBase
+      : source === "guided"
+        ? `Output ${index + 1}`
+        : `Edit ${index + 1}`,
   }));
 }
 
@@ -90,7 +99,7 @@ export default function ProductShootsRoute() {
   const { data: session, isPending: isSessionPending } = useSession();
   const queryClient = useQueryClient();
 
-  const { data: profileData } = useQuery({
+  const { data: profileData, isPending: isProfilePending } = useQuery({
     queryKey: meQueryKey,
     queryFn: fetchMe,
     enabled: !!session,
@@ -125,9 +134,9 @@ export default function ProductShootsRoute() {
     }
   }, [studioState, setStudioState]);
 
-  const remainingCredits = profileData?.profile.creditsProductShoots ?? 0;
-  const isOutOfCredits = false;
-  const hasLowCredits = false;
+  const remainingCredits = profileData?.profile.creditsImageEdits ?? 0;
+  const isOutOfCredits = !isProfilePending && remainingCredits <= 0;
+  const hasLowCredits = !isProfilePending && remainingCredits === 1;
 
   const referencePreviewUrl = uploadPreviewUrl ?? (referenceDraft.imageUrl.trim() || null);
 
@@ -163,7 +172,8 @@ export default function ProductShootsRoute() {
   );
 
   const hasValidReference = Boolean(referenceDraft.imageFile || referenceDraft.imageUrl.trim());
-  const canContinueToWorkspace = hasValidReference && selectedTemplateIds.length > 0 && !isBusy;
+  const canContinueToWorkspace =
+    hasValidReference && selectedTemplateIds.length > 0 && !isBusy && !isOutOfCredits;
 
   const selectedOutput = outputs.find((output) => output.id === selectedOutputId) ?? null;
   const isSourceSelected =
@@ -175,7 +185,7 @@ export default function ProductShootsRoute() {
 
   const canGenerateFromSelectedOutput = canRegenerateSingleImage({
     isPending: isBusy,
-    isOutOfCredits: false,
+    isOutOfCredits,
     selectedImageUrl: selectedEditableImageUrl,
     editPrompt: editorPrompt,
   });
@@ -212,7 +222,7 @@ export default function ProductShootsRoute() {
   }
 
   async function handleGenerateFromTemplates() {
-    if (isSessionPending || !session || isBusy) {
+    if (isSessionPending || !session || isBusy || isOutOfCredits) {
       return;
     }
 
@@ -238,7 +248,9 @@ export default function ProductShootsRoute() {
       try {
         referenceImageUrl = await fileToDataUrl(referenceDraft.imageFile);
       } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : "Unable to read the selected image.");
+        setSubmitError(
+          error instanceof Error ? error.message : "Unable to read the selected image.",
+        );
         return;
       }
     }
@@ -253,17 +265,18 @@ export default function ProductShootsRoute() {
     const queuedLabels = selectedTemplates.map((template) => template.label);
     const runId = activeRunId ?? crypto.randomUUID();
     setActiveRunId(runId);
-    const selectedTemplateSnapshots: ProductShootRunTemplate[] = selectedTemplates.map((template) => ({
-      id: template.id,
-      label: template.label,
-    }));
+    const selectedTemplateSnapshots: ProductShootRunTemplate[] = selectedTemplates.map(
+      (template) => ({
+        id: template.id,
+        label: template.label,
+      }),
+    );
     setPendingTemplateLabels(queuedLabels);
 
     setIsTemplateBatchPending(true);
 
     try {
       for (const template of selectedTemplates) {
-
         const payloadValues = {
           ...formValues,
           prompt: composeTemplateShotPrompt(template),
@@ -302,7 +315,7 @@ export default function ProductShootsRoute() {
         } catch (error) {
           if (!terminalError) {
             if (error instanceof ApiError && error.code === "OUT_OF_CREDITS") {
-              terminalError = "You are out of Product Shoots credits.";
+              terminalError = "You are out of image edit credits.";
             } else {
               terminalError = error instanceof Error ? error.message : "Request failed.";
             }
@@ -341,7 +354,7 @@ export default function ProductShootsRoute() {
   }
 
   async function handleGenerateFromSelectedOutput() {
-    if (isSessionPending || !session || isBusy) {
+    if (isSessionPending || !session || isBusy || isOutOfCredits) {
       return;
     }
 
@@ -352,7 +365,9 @@ export default function ProductShootsRoute() {
         try {
           referenceImageUrl = await fileToDataUrl(referenceDraft.imageFile);
         } catch (error) {
-          setSubmitError(error instanceof Error ? error.message : "Unable to read the selected image.");
+          setSubmitError(
+            error instanceof Error ? error.message : "Unable to read the selected image.",
+          );
           return;
         }
       } else if (referenceDraft.imageUrl.trim()) {
@@ -379,13 +394,8 @@ export default function ProductShootsRoute() {
       referenceImageUrl,
       productShootContext: {
         runId: activeRunId ?? crypto.randomUUID(),
-        templateId:
-          selectedTemplates[0]?.id ??
-          "manual-edit",
-        templateLabel:
-          selectedOutput?.label ||
-          selectedTemplates[0]?.label ||
-          "Manual Edit",
+        templateId: selectedTemplates[0]?.id ?? "manual-edit",
+        templateLabel: selectedOutput?.label || selectedTemplates[0]?.label || "Manual Edit",
         selectedTemplates:
           selectedTemplates.length > 0
             ? selectedTemplates.map((template) => ({
@@ -406,10 +416,7 @@ export default function ProductShootsRoute() {
     mutation.mutate(payloadValues, {
       onSuccess: (result) => {
         setActiveRunId(payloadValues.productShootContext?.runId ?? null);
-        const nextOutputs = mapWorkflowImages(
-          getWorkflowOutputImages(result.response),
-          "edit",
-        );
+        const nextOutputs = mapWorkflowImages(getWorkflowOutputImages(result.response), "edit");
         setOutputs((current) => [...current, ...nextOutputs]);
         setSelectedOutputId(nextOutputs[0]?.id ?? selectedOutputId ?? SOURCE_IMAGE_SELECTION_ID);
         syncCredits(queryClient, result.response, profileData);
@@ -417,7 +424,7 @@ export default function ProductShootsRoute() {
       },
       onError: (error) => {
         if (error instanceof ApiError && error.code === "OUT_OF_CREDITS") {
-          setSubmitError("You are out of Product Shoots credits.");
+          setSubmitError("You are out of image edit credits.");
           return;
         }
         setSubmitError(error instanceof Error ? error.message : "Request failed.");
@@ -458,7 +465,9 @@ export default function ProductShootsRoute() {
       const run = detail.item;
 
       const nextOutputs = run.outputs
-        .filter((output): output is typeof output & { imageUrl: string } => Boolean(output.imageUrl))
+        .filter((output): output is typeof output & { imageUrl: string } =>
+          Boolean(output.imageUrl),
+        )
         .map((output, index) => ({
           id: crypto.randomUUID(),
           url: output.imageUrl,
@@ -574,7 +583,7 @@ export default function ProductShootsRoute() {
           </section>
         ) : null}
 
-        {(studioState === "guided-compose" || isTemplateModalOpen) ? (
+        {studioState === "guided-compose" || isTemplateModalOpen ? (
           <GuidedComposePanel
             referencePreviewUrl={referencePreviewUrl}
             referenceError={referenceError}
@@ -661,8 +670,7 @@ function syncCredits(
     ...current,
     profile: {
       ...current.profile,
-      creditsProductShoots: response.credits.productShoots,
-      creditsAdGraphics: response.credits.adGraphics,
+      creditsImageEdits: response.credits.imageEdits,
     },
   });
 }

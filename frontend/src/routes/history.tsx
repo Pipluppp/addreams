@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMolecule } from "bunshi/react";
 import { Alert, Button, Card, Chip, Spinner } from "@heroui/react";
@@ -29,11 +29,6 @@ export default function HistoryRoute() {
         workflow: filters.workflow,
       }),
   });
-
-  const selectedSummary = useMemo(
-    () => historyQuery.data?.items.find((item) => item.id === selectedId) ?? null,
-    [historyQuery.data?.items, selectedId],
-  );
 
   const detailQuery = useQuery({
     queryKey: ["history-detail", selectedId],
@@ -113,7 +108,7 @@ export default function HistoryRoute() {
             />
             <FilterButton
               active={filters.workflow === "image-from-text"}
-              label="Product Shoots"
+              label="Legacy Text-to-Image"
               onPress={() => {
                 setOffset(0);
                 setFilters((current) => ({ ...current, workflow: "image-from-text" }));
@@ -121,7 +116,7 @@ export default function HistoryRoute() {
             />
             <FilterButton
               active={filters.workflow === "image-from-reference"}
-              label="Ad Graphics"
+              label="Image Edit"
               onPress={() => {
                 setOffset(0);
                 setFilters((current) => ({ ...current, workflow: "image-from-reference" }));
@@ -184,7 +179,9 @@ export default function HistoryRoute() {
                   Previous
                 </Button>
                 <p className="text-xs text-ink-muted">
-                  {pagination ? `${pagination.offset + 1}-${pagination.offset + items.length} of ${pagination.total}` : "—"}
+                  {pagination
+                    ? `${pagination.offset + 1}-${pagination.offset + items.length} of ${pagination.total}`
+                    : "—"}
                 </p>
                 <Button
                   variant="outline"
@@ -345,8 +342,8 @@ function formatTimestamp(value: string | null): string {
 }
 
 function toWorkflowLabel(workflow: HistoryItem["workflow"]): string {
-  if (workflow === "image-from-text") return "Product Shoots";
-  if (workflow === "image-from-reference") return "Ad Graphics";
+  if (workflow === "image-from-text") return "Legacy Text-to-Image";
+  if (workflow === "image-from-reference") return "Image Edit";
   return "Video Stub";
 }
 

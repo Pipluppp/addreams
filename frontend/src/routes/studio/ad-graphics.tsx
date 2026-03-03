@@ -155,7 +155,7 @@ export default function AdGraphicsRoute() {
     validateAdStep(index, validation.errors, Boolean(lastSuccess)),
   );
   const stepStatuses = deriveStepStatuses(boundedStep, stepValidity);
-  const remainingCredits = profileData?.profile.creditsAdGraphics ?? 0;
+  const remainingCredits = profileData?.profile.creditsImageEdits ?? 0;
   const isOutOfCredits = !isProfilePending && remainingCredits <= 0;
   const hasLowCredits = !isProfilePending && remainingCredits === 1;
 
@@ -166,10 +166,7 @@ export default function AdGraphicsRoute() {
 
   const activePreset = getPresetById(formValues.selectedPreset);
   const debouncedPrompt = useDebounced(formValues.prompt, 500);
-  const intentWarnings = useMemo(
-    () => detectIntentWarnings(debouncedPrompt),
-    [debouncedPrompt],
-  );
+  const intentWarnings = useMemo(() => detectIntentWarnings(debouncedPrompt), [debouncedPrompt]);
 
   const imageQuality = imageDimensions
     ? checkImageQuality(imageDimensions.width, imageDimensions.height)
@@ -204,7 +201,7 @@ export default function AdGraphicsRoute() {
       },
       onError: (error) => {
         if (error instanceof ApiError && error.code === "OUT_OF_CREDITS") {
-          setSubmitError("You are out of Ad Graphics credits. Please upgrade to continue.");
+          setSubmitError("You are out of image edit credits.");
           return;
         }
         setSubmitError(error instanceof Error ? error.message : "Request failed.");
@@ -272,7 +269,7 @@ export default function AdGraphicsRoute() {
               <Alert.Content>
                 <Alert.Title>Out of credits</Alert.Title>
                 <Alert.Description>
-                  Ad Graphics credits are exhausted. Upgrade to continue generating.
+                  Image edit credits are exhausted. Upgrade to continue generating.
                 </Alert.Description>
               </Alert.Content>
             </Alert>
@@ -281,7 +278,9 @@ export default function AdGraphicsRoute() {
               <Alert.Indicator />
               <Alert.Content>
                 <Alert.Title>Low credits</Alert.Title>
-                <Alert.Description>{remainingCredits} Ad Graphics credit remaining.</Alert.Description>
+                <Alert.Description>
+                  {remainingCredits} image edit credit remaining.
+                </Alert.Description>
               </Alert.Content>
             </Alert>
           ) : null}
@@ -489,7 +488,6 @@ export default function AdGraphicsRoute() {
                       />
                     </div>
                   )}
-
                 </Disclosure.Body>
               </Disclosure.Content>
             </Disclosure>
@@ -610,8 +608,8 @@ export default function AdGraphicsRoute() {
   return (
     <div className="container-shell py-6 sm:py-8">
       <StudioStepperLayout
-        workflow="Product Shoots"
-        title="Product Shoot Workflow"
+        workflow="Ad Graphics"
+        title="Ad Graphics Workflow"
         description="Upload a product image, choose a use case, and generate refined ad-ready variants."
         demoGuide={{ color: "orange", variant: "product-shoot" }}
         steps={AD_STEPS}
@@ -664,8 +662,7 @@ function syncCredits(
     ...current,
     profile: {
       ...current.profile,
-      creditsProductShoots: response.credits.productShoots,
-      creditsAdGraphics: response.credits.adGraphics,
+      creditsImageEdits: response.credits.imageEdits,
     },
   });
 }

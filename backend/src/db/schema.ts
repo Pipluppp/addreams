@@ -60,6 +60,7 @@ export const userProfile = sqliteTable("user_profile", {
   accountType: text("account_type", { enum: ["free", "paid"] })
     .notNull()
     .default("free"),
+  creditsImageEdits: integer("credits_image_edits").notNull().default(2),
   creditsProductShoots: integer("credits_product_shoots").notNull().default(1),
   creditsAdGraphics: integer("credits_ad_graphics").notNull().default(1),
   createdAt: integer("created_at", { mode: "timestamp" })

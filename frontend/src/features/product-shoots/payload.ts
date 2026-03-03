@@ -6,7 +6,9 @@ export type ProductShootsGenerationValues = ProductShootsFormValues & {
   productShootContext?: ProductShootsRequest["productShootContext"];
 };
 
-export function buildProductShootsPayload(values: ProductShootsGenerationValues): ProductShootsRequest {
+export function buildProductShootsPayload(
+  values: ProductShootsGenerationValues,
+): ProductShootsRequest {
   const prompt = values.prompt.trim();
   const negativePrompt = values.negative_prompt.trim();
   const referenceImageUrl = values.referenceImageUrl.trim();
@@ -14,7 +16,6 @@ export function buildProductShootsPayload(values: ProductShootsGenerationValues)
   return {
     prompt,
     referenceImageUrl,
-    model: "image-edit-latest",
     ...(values.productShootContext ? { productShootContext: values.productShootContext } : {}),
     input: {
       messages: [
@@ -32,8 +33,6 @@ export function buildProductShootsPayload(values: ProductShootsGenerationValues)
       n: 1,
       prompt_extend: true,
       watermark: false,
-      response_format: "url",
-      output_format: values.output_format,
       negative_prompt: negativePrompt.length ? negativePrompt : undefined,
     },
   };

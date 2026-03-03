@@ -5,13 +5,11 @@ import * as schema from "../db/schema";
 export type CreditWorkflow = "image-from-text" | "image-from-reference" | "video-from-reference";
 
 export type CreditBalance = {
-  productShoots: number;
-  adGraphics: number;
+  imageEdits: number;
 };
 
 type CreditRow = {
-  creditsProductShoots: number;
-  creditsAdGraphics: number;
+  creditsImageEdits: number;
 };
 
 type AccountType = "free" | "paid";
@@ -21,78 +19,47 @@ const REFUND_REASON = "generation_refund";
 
 const SELECT_BALANCE_SQL = `
 SELECT
-  credits_product_shoots AS creditsProductShoots,
-  credits_ad_graphics AS creditsAdGraphics
+  credits_image_edits AS creditsImageEdits
 FROM user_profile
 WHERE user_id = ?1
 `;
 
-const RESERVE_PRODUCT_SHOOTS_SQL = `
+const RESERVE_IMAGE_EDITS_SQL = `
 UPDATE user_profile
 SET
-  credits_product_shoots = credits_product_shoots - 1,
+  credits_image_edits = credits_image_edits - 1,
   updated_at = unixepoch()
 WHERE user_id = ?1
-  AND credits_product_shoots > 0
+  AND credits_image_edits > 0
 RETURNING
-  credits_product_shoots AS creditsProductShoots,
-  credits_ad_graphics AS creditsAdGraphics
+  credits_image_edits AS creditsImageEdits
 `;
 
-const RESERVE_AD_GRAPHICS_SQL = `
+const REFUND_IMAGE_EDITS_SQL = `
 UPDATE user_profile
 SET
-  credits_ad_graphics = credits_ad_graphics - 1,
-  updated_at = unixepoch()
-WHERE user_id = ?1
-  AND credits_ad_graphics > 0
-RETURNING
-  credits_product_shoots AS creditsProductShoots,
-  credits_ad_graphics AS creditsAdGraphics
-`;
-
-const REFUND_PRODUCT_SHOOTS_SQL = `
-UPDATE user_profile
-SET
-  credits_product_shoots = credits_product_shoots + 1,
+  credits_image_edits = credits_image_edits + 1,
   updated_at = unixepoch()
 WHERE user_id = ?1
 RETURNING
-  credits_product_shoots AS creditsProductShoots,
-  credits_ad_graphics AS creditsAdGraphics
-`;
-
-const REFUND_AD_GRAPHICS_SQL = `
-UPDATE user_profile
-SET
-  credits_ad_graphics = credits_ad_graphics + 1,
-  updated_at = unixepoch()
-WHERE user_id = ?1
-RETURNING
-  credits_product_shoots AS creditsProductShoots,
-  credits_ad_graphics AS creditsAdGraphics
+  credits_image_edits AS creditsImageEdits
 `;
 
 function getDefaultCredits(accountType: AccountType): CreditBalance {
   if (accountType === "paid") {
-    return { productShoots: 10, adGraphics: 10 };
+    return { imageEdits: 20 };
   }
-  return { productShoots: 1, adGraphics: 1 };
+  return { imageEdits: 2 };
 }
 
 function toCreditBalance(row: CreditRow): CreditBalance {
   return {
-    productShoots: row.creditsProductShoots,
-    adGraphics: row.creditsAdGraphics,
+    imageEdits: row.creditsImageEdits,
   };
 }
 
-function resolveSql(workflow: CreditWorkflow, mode: "reserve" | "refund"): string {
-  const isProductShoots = workflow === "image-from-text";
-  if (mode === "reserve") {
-    return isProductShoots ? RESERVE_PRODUCT_SHOOTS_SQL : RESERVE_AD_GRAPHICS_SQL;
-  }
-  return isProductShoots ? REFUND_PRODUCT_SHOOTS_SQL : REFUND_AD_GRAPHICS_SQL;
+function resolveSql(_workflow: CreditWorkflow, mode: "reserve" | "refund"): string {
+  return mode === "reserve" ? RESERVE_IMAGE_EDITS_SQL : REFUND_IMAGE_EDITS_SQL;
 }
 
 async function readBalance(db: D1Database, userId: string): Promise<CreditBalance> {
@@ -120,8 +87,7 @@ export async function ensureUserProfile(db: Database, userId: string) {
       .values({
         userId,
         accountType: "free",
-        creditsProductShoots: defaults.productShoots,
-        creditsAdGraphics: defaults.adGraphics,
+        creditsImageEdits: defaults.imageEdits,
       })
       .returning();
 
