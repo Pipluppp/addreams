@@ -28,6 +28,7 @@ import {
 import {
   PRODUCT_SHOOTS_TEMPLATE_CAP,
   PRODUCT_SHOOTS_TEMPLATES,
+  composeTemplateShotNegativePrompt,
   composeTemplateShotPrompt,
   getTemplateById,
   groupTemplatesByCategory,
@@ -280,6 +281,10 @@ export default function ProductShootsRoute() {
         const payloadValues = {
           ...formValues,
           prompt: composeTemplateShotPrompt(template),
+          negative_prompt: composeTemplateShotNegativePrompt(
+            template,
+            formValues.negative_prompt,
+          ),
           size: selectedAspectRatio.size,
           referenceImageUrl,
           productShootContext: {

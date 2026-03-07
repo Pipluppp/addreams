@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   PRODUCT_SHOOTS_TEMPLATE_CAP,
+  getTemplateById,
   toggleTemplateSelection,
 } from "../templates";
 
@@ -23,5 +24,12 @@ describe("toggleTemplateSelection", () => {
     const next = toggleTemplateSelection(atCap, "t2", PRODUCT_SHOOTS_TEMPLATE_CAP);
 
     expect(next).toEqual(["t1", "t3", "t4"]);
+  });
+
+  it("exposes preview metadata for image-backed templates", () => {
+    const template = getTemplateById("general-handoff-hero");
+
+    expect(template?.preview.imageSrc).toBe("/template-previews/product-shoots/handoff-hero.jpg");
+    expect(template?.preview.toneLabel).toBe("Handoff");
   });
 });

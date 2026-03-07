@@ -194,11 +194,22 @@ export function GuidedComposePanel({
                   {selectedTemplates.map((template) => (
                     <article key={template.id} className="overflow-hidden rounded-xl border border-studio-border bg-studio-surface">
                       <div
-                        className="h-24"
+                        className="relative h-24"
                         style={{
                           backgroundImage: `linear-gradient(145deg, ${template.preview.gradientFrom}, ${template.preview.gradientTo})`,
                         }}
-                      />
+                      >
+                        {template.preview.imageSrc ? (
+                          <img
+                            src={template.preview.imageSrc}
+                            alt={template.preview.imageAlt ?? `${template.label} template preview`}
+                            loading="lazy"
+                            decoding="async"
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-linear-to-t from-black/28 via-transparent to-white/10" />
+                      </div>
                       <div className="px-2 py-1.5">
                         <p className="text-[11px] font-semibold text-studio-text">{template.label}</p>
                       </div>

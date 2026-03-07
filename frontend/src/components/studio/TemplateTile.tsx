@@ -8,6 +8,8 @@ type TemplateTileProps = {
     toneLabel: string;
     gradientFrom: string;
     gradientTo: string;
+    imageSrc?: string;
+    imageAlt?: string;
   };
   isSelected: boolean;
   isDisabled: boolean;
@@ -44,11 +46,21 @@ export function TemplateTile({
           backgroundImage: `linear-gradient(135deg, ${preview.gradientFrom}, ${preview.gradientTo})`,
         }}
       >
+        {preview.imageSrc ? (
+          <img
+            src={preview.imageSrc}
+            alt={preview.imageAlt ?? `${label} template preview`}
+            loading="lazy"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-linear-to-t from-black/28 via-transparent to-white/18" />
         <div className="absolute left-2 top-2 rounded-full bg-white/75 px-2 py-0.5 text-[10px] font-semibold text-ink">
           {preview.toneLabel}
         </div>
-        <div className="absolute inset-x-4 bottom-3 rounded-lg border border-white/60 bg-white/55 p-2 text-[10px] font-medium text-ink">
-          Placeholder template preview
+        <div className="absolute inset-x-4 bottom-3 rounded-lg border border-white/60 bg-white/72 p-2 text-[10px] font-medium text-ink shadow-sm">
+          {preview.imageSrc ? `${label} preview` : "Placeholder template preview"}
         </div>
       </div>
 

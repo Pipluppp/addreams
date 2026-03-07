@@ -11,10 +11,14 @@ export type ProductShootsTemplate = {
   category: ProductShootsTemplateCategory;
   summary: string;
   promptSeed: string;
+  promptTemplate?: string;
+  negativePromptTemplate?: string;
   preview: {
     toneLabel: string;
     gradientFrom: string;
     gradientTo: string;
+    imageSrc?: string;
+    imageAlt?: string;
   };
 };
 
@@ -101,6 +105,25 @@ export const PRODUCT_SHOOTS_TEMPLATES: ProductShootsTemplate[] = [
       toneLabel: "Mono",
       gradientFrom: "#F3F4F6",
       gradientTo: "#D1D5DB",
+    },
+  },
+  {
+    id: "general-handoff-hero",
+    label: "Handoff Hero",
+    category: "General",
+    summary: "Cinematic exchange shot with bold color blocking and editorial polish.",
+    promptSeed:
+      "editorial handoff composition with two hands exchanging the featured product in a clean studio scene",
+    promptTemplate:
+      "Scene direction: an ultra-realistic editorial handoff with exactly two cropped forearms, one left and one right, both visibly holding the uploaded product at center. Use a graphic backdrop with cream, butter yellow, and terracotta color blocking, paper texture, soft shadow shapes, and clean negative space, never plain gray. One arm wears a vivid Ankara-inspired sleeve; the other a refined dark sleeve. Use polished lighting, crisp contrast, real skin texture, and a natural pose that keeps the exact product recognizable.",
+    negativePromptTemplate:
+      "extra hands, extra arms, duplicate fingers, mirrored limbs, multiple handoff poses, more than one person, cluttered props, flat gray background, cheap studio backdrop, warped product, deformed anatomy, poster text, extra logos",
+    preview: {
+      toneLabel: "Handoff",
+      gradientFrom: "#FFF8DD",
+      gradientTo: "#FDE047",
+      imageSrc: "/template-previews/product-shoots/handoff-hero.jpg",
+      imageAlt: "Preview of a handoff-style product shoot template.",
     },
   },
   {
@@ -206,9 +229,17 @@ export function composeGuidedPrompt(
 
 export function composeTemplateShotPrompt(template: ProductShootsTemplate): string {
   return [
-    "Use the provided reference image as the exact product to feature.",
-    "Preserve product identity, geometry, color, and material cues from the reference.",
-    `Style direction: ${template.promptSeed}.`,
-    "Produce one polished commercial product photo.",
+    "Use the provided reference image as the exact product.",
+    "Do not replace it with a different object or package.",
+    "Preserve product identity, silhouette, colors, materials, and label details.",
+    template.promptTemplate ? template.promptTemplate : `Style direction: ${template.promptSeed}.`,
+    "Produce one polished commercial product photo. No poster text, app UI, or extra logos.",
   ].join(" ");
+}
+
+export function composeTemplateShotNegativePrompt(
+  template: ProductShootsTemplate,
+  negativePrompt = "",
+): string {
+  return [template.negativePromptTemplate, negativePrompt.trim()].filter(Boolean).join(", ");
 }

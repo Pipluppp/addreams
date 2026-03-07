@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildProductShootsPayload } from "../payload";
-import { composeTemplateShotPrompt, PRODUCT_SHOOTS_TEMPLATES } from "../templates";
+import { MAX_PROMPT_LENGTH } from "../../parameters/constants";
+import {
+  composeTemplateShotNegativePrompt,
+  composeTemplateShotPrompt,
+  getTemplateById,
+  PRODUCT_SHOOTS_TEMPLATES,
+} from "../templates";
 
 describe("buildProductShootsPayload", () => {
   it("builds an image-reference payload for product shoots", () => {
@@ -39,5 +45,38 @@ describe("composeTemplateShotPrompt", () => {
     expect(prompt).toContain("exact product");
     expect(prompt).toContain("Preserve product identity");
     expect(prompt).toContain(template.promptSeed);
+  });
+
+  it("uses custom scene instructions for specialized templates", () => {
+    const template = getTemplateById("general-handoff-hero");
+    expect(template).toBeDefined();
+    if (!template) {
+      return;
+    }
+
+    const prompt = composeTemplateShotPrompt(template);
+
+    expect(prompt).toContain("Do not replace it with a different object or package.");
+    expect(prompt).toContain("exactly two cropped forearms");
+    expect(prompt).toContain("paper texture");
+    expect(prompt).toContain("No poster text");
+    expect(prompt.length).toBeLessThanOrEqual(MAX_PROMPT_LENGTH);
+  });
+
+  it("merges template and user negative prompts for specialized templates", () => {
+    const template = getTemplateById("general-handoff-hero");
+    expect(template).toBeDefined();
+    if (!template) {
+      return;
+    }
+
+    const negativePrompt = composeTemplateShotNegativePrompt(
+      template,
+      "busy props, messy lighting",
+    );
+
+    expect(negativePrompt).toContain("extra hands");
+    expect(negativePrompt).toContain("flat gray background");
+    expect(negativePrompt).toContain("busy props, messy lighting");
   });
 });
