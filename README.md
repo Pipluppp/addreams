@@ -12,13 +12,20 @@ Workers-first monorepo for Addreams MVP.
 
 - Node.js 20+
 - npm 10+
-- Cloudflare account and `wrangler login`
+- Cloudflare account and an authenticated Wrangler session
+
+This repo uses workspace-local `wrangler`, so a global install is not required. Use `npx wrangler ...` from the repo root or the existing `npm` scripts.
 
 ## Install
 
 ```bash
 npm install
 ```
+
+Windows-native setup notes:
+- Run the repo from PowerShell or `cmd.exe`, not WSL.
+- If a previous WSL install left behind incompatible binaries, reinstall `node_modules` from Windows.
+- See `docs/windows-native-setup.md`.
 
 ## Local Development
 

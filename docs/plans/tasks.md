@@ -40,3 +40,16 @@ npm run deploy:frontend
 curl -i https://addreams-api.duncanb013.workers.dev/api/health
 curl -i https://addreams-web.duncanb013.workers.dev/api/health
 ```
+
+```powershell
+Get-Content .env.cloudflare.local | ForEach-Object {
+  if ($_ -match '^\s*(#|$)') { return }
+  $name, $value = $_ -split '=', 2
+  if (-not $name -or -not $value) { return }
+  [System.Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim(), 'Process')
+}
+npm run deploy:backend
+npm run deploy:frontend
+curl -i https://addreams-api.duncanb013.workers.dev/api/health
+curl -i https://addreams-web.duncanb013.workers.dev/api/health
+```

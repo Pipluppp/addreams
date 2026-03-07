@@ -57,6 +57,17 @@ Load token (without printing secret):
 set -a; source .env.cloudflare.local; set +a
 ```
 
+PowerShell (Windows):
+
+```powershell
+Get-Content .env.cloudflare.local | ForEach-Object {
+  if ($_ -match '^\s*(#|$)') { return }
+  $name, $value = $_ -split '=', 2
+  if (-not $name -or -not $value) { return }
+  [System.Environment]::SetEnvironmentVariable($name.Trim(), $value.Trim(), 'Process')
+}
+```
+
 ## Deploy
 
 Deploy backend first, then frontend:
