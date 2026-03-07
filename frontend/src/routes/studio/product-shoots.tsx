@@ -37,7 +37,6 @@ import {
 import { validateProductShootsForm } from "../../features/product-shoots/schema";
 import {
   canRegenerateSingleImage,
-  transitionProductShootsState,
 } from "../../features/product-shoots/studio-machine";
 import { useProductShootsMutation } from "../../features/product-shoots/use-product-shoots-mutation";
 import {
@@ -192,9 +191,20 @@ export default function ProductShootsRoute() {
   });
 
   function openGuidedComposer() {
+    setReferenceDraft({
+      mode: "upload",
+      imageUrl: "",
+      imageFile: null,
+    });
+    setSelectedTemplateIds([]);
+    setOutputs([]);
+    setSelectedOutputId(null);
+    setEditorPrompt("");
+    setPendingTemplateLabels([]);
+    setReferenceError(undefined);
     setSubmitError(null);
     setActiveRunId(null);
-    setStudioState(transitionProductShootsState(studioState, "START_GUIDED"));
+    setStudioState("guided-compose");
   }
 
   function openTemplatePicker() {
